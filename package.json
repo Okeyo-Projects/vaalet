@@ -1,0 +1,24 @@
+{
+  "name": "valet",
+  "private": true,
+  "packageManager": "bun@1.1.26",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "turbo run format"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.26",
+    "dotenv": "^16.4.5",
+    "turbo": "^2.1.3",
+    "typescript": "^5.6.3"
+  }
+}
+
+

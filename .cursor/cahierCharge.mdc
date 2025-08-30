@@ -1,0 +1,21 @@
+Valet Agent Ecommerce 
+
+Nom : Valet Ia
+
+Valet accompagne les gens intéressés par les produits en ligne (tout type de produit), affiche les meilleures offres existante sur le Web selon la localisation et le choix de l’utilisateur est ce qu’il veut résultats locales ou internationales. Après récoltes des intérêts, l’agent va continuer a lui envoyer chaque jour les meilleures offres, réduction, promotions de ce qu’il veut et ce qui affiché sur le web.
+
+Interface :
+
+Pareille a chat gpt , elle commence avec un message Bonjour je suis votre Valet, je suis a votre entière disposition, en dessous une barre de recherche.
+
+Une fois la recherche effectuée, ca va lui affiché 10 meilleures produits dispo sur le web, avec leur prix, les reviews, la photos ou la vidéo 
+
+Une synthèse de ce que le valet lui conseille.
+
+Intérêts :
+
+Une fois les intérêts récoltés, Valet aura comme rôle, de lui proposer les meilleures offres, et les updates sur les produits qui matche avec son intérêt. Envoie quotidien de notifs et mails qui contiennent ce que valet a trouvé pour lui. Une redirection directe vers Valet ou se trouve plus d’infos.
+
+Si l’utilisateur a acheté ou a mentionné qu’il dispose d’une chemise Bleue, Valet va lui proposer après des items qui vont avec la chemise. Comme exemple.---
+description:
+
