@@ -147,287 +147,181 @@ async function verifyProductsExist(products: Product[]): Promise<Product[]> {
   }
 }
 
-// Job state
-type RechercheJobStatus = 'queued' | 'analyzing' | 'deepsearch' | 'compiling' | 'done' | 'error'
-interface RechercheJob {
-  id: string
-  q: string
-  status: RechercheJobStatus
-  message?: string
-  result?: RechercheResult
-  createdAt: number
-  updatedAt: number
-  mode?: 'fast' | 'deep'
-}
-const jobs = new Map<string, RechercheJob>()
+// Countries supported by Google Shopping engine (from SerpAPI official list)
+const GOOGLE_SHOPPING_SUPPORTED_COUNTRIES = new Set([
+  'ai', 'ar', 'aw', 'au', 'at', 'be', 'bm', 'br', 'io', 'ca', 'ky', 'cl', 
+  'cx', 'cc', 'co', 'cz', 'dk', 'fk', 'fi', 'fr', 'gf', 'pf', 'tf', 'de', 
+  'gr', 'gp', 'hm', 'hk', 'hu', 'in', 'id', 'ie', 'il', 'it', 'jp', 'kr', 
+  'my', 'mq', 'yt', 'mx', 'ms', 'nl', 'nc', 'nz', 'nf', 'no', 'ph', 'pl', 
+  'pt', 're', 'ro', 'ru', 'pm', 'sa', 'sg', 'sk', 'za', 'gs', 'es', 'se', 
+  'ch', 'tw', 'th', 'tk', 'tr', 'tc', 'ua', 'ae', 'uk', 'gb', 'us', 'vn', 
+  'vg', 'wf'
+])
 
-async function runDeepResearchJob(
-  openai: OpenAI,
-  job: RechercheJob,
-  set: (s: RechercheJobStatus, m?: string) => void
-) {
+// Unified search function combining SerpAPI + OpenAI
+async function searchProducts(query: string, country: string = 'us'): Promise<SearchResult> {
+  const serpApiKey = requireSerpApiKey()
+  const openaiApiKey = requireOpenAIKey()
+  const openai = new OpenAI({ apiKey: openaiApiKey, timeout: 60000 })
+
   try {
-    set('analyzing', 'Analyse approfondie…')
-    set('deepsearch', 'Recherche web en cours…')
+    console.log(`[search] Starting search for: "${query}" in country: ${country}`)
     
-    // More structured prompt that's less likely to fail
-    const input = `
-Research and find the top 10 most relevant products for: "${job.q}"
-
-Do:
-- Search for actual products available for purchase online
-- Include specific product details: exact prices, merchant names, product URLs
-- Find products with real image or video URLs from the merchant's site
-- Prioritize major retailers and official brand stores
-- Include a variety of price points and options
-
-Return the results as a JSON object with this EXACT structure:
-{
-  "description": "A brief summary of the search results (maximum 400 characters)",
-  "products": [
-    {
-      "id": "unique-product-id",
-      "name": "Exact Product Name",
-      "price": 99.99,
-      "currency": "USD",
-      "url": "https://example.com/product-page",
-      "source": "Store Name",
-      "imageUrl": "https://example.com/product-image.jpg",
-      "snippet": "Brief product description"
-    }
-  ]
-}
-
-Important:
-- Return ONLY the JSON object, no additional text
-- All URLs must be real, working links to actual products
-- Image URLs must be from the same domain as the product URL
-- Maximum 10 products in the array
-- Prices must be numeric values
-`;
-
-    console.log(`[deep:${job.id}] Creating request with o3-deep-research`)
+    // Step 1: Determine which search engine to use based on country support
+    const useGoogleShopping = GOOGLE_SHOPPING_SUPPORTED_COUNTRIES.has(country.toLowerCase())
+    const engine = useGoogleShopping ? "google_shopping" : "google"
     
-    try {
-      const resp = await openai.responses.create({
-        model: "o3-deep-research",
-        input,
-        background: true,
-        tools: [
-          { type: "web_search_preview" }
-        ],
-      } as any)
-      
-      const id = (resp as any).id as string
-      console.log(`[deep:${job.id}] Created with ID=${id}`)
-      
-      // Polling logic
-      const start = Date.now()
-      const maxWaitTime = 1_800_000 // 30 minutes
-      const pollInterval = 5000 // 5 seconds
-      
-      while (true) {
-        await new Promise(res => setTimeout(res, pollInterval))
-        
-        const r = await openai.responses.retrieve(id)
-        const status = (r as any).status
-        const elapsed = Math.round((Date.now() - start) / 1000)
-        console.log(`[deep:${job.id}] Status=${status} (${elapsed}s elapsed)`)
-        
-        if (status === 'completed') {
-          set('compiling', 'Compilation des résultats…')
-          const outputText = (r as any).output_text
-          
-          if (!outputText) {
-            throw new Error('Empty response received')
-          }
-          
-          // Extract JSON from the response (in case there's extra text)
-          let parsed: RechercheResult
-          try {
-            // First try direct parse
-            parsed = JSON.parse(outputText)
-          } catch {
-            // If that fails, try to extract JSON
-            const jsonMatch = outputText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-              console.error(`[deep:${job.id}] No JSON found in response:`, outputText)
-              throw new Error('Invalid response format - no JSON found')
-            }
-            parsed = JSON.parse(jsonMatch[0])
-          }
-          
-          // Validate and sanitize
-          if (!parsed.products || !Array.isArray(parsed.products)) {
-            throw new Error('Invalid response structure - missing products array')
-          }
-          
-          const sanitized = sanitizeProducts(parsed.products)
-          const verified = await verifyProductsExist(sanitized)
-          
-          job.result = { 
-            description: parsed.description || `Found ${verified.length} products for "${job.q}"`,
-            products: verified.slice(0, 10) 
-          }
-          set('done')
-          console.log(`[deep:${job.id}] Success with ${job.result.products.length} products`)
-          return
-        }
-        
-        if (status === 'failed') {
-          const fullError = (r as any)
-          console.error(`[deep:${job.id}] API Response:`, JSON.stringify(fullError, null, 2))
-          
-          // Extract error details
-          const errorInfo = fullError.last_error || fullError.error || {}
-          const errorMessage = errorInfo.message || errorInfo.error || 'Unknown error'
-          const errorType = errorInfo.type || errorInfo.code || 'unknown'
-          
-          // Check for specific error types
-          if (errorMessage.includes('quota') || errorMessage.includes('limit')) {
-            throw new Error('API quota exceeded. Please try again later.')
-          }
-          if (errorMessage.includes('timeout')) {
-            throw new Error('Research timeout. Query may be too complex.')
-          }
-          
-          throw new Error(`Deep research failed: ${errorMessage} (${errorType})`)
-        }
-        
-        if (status === 'cancelled') {
-          throw new Error('Research was cancelled')
-        }
-        
-        if (Date.now() - start > maxWaitTime) {
-          throw new Error(`Timeout after ${maxWaitTime/60000} minutes`)
-        }
-      }
-      
-    } catch (apiError: any) {
-      // Handle API-level errors
-      console.error(`[deep:${job.id}] API Error:`, apiError)
-      
-      if (apiError.status === 404) {
-        throw new Error('o3-deep-research model not available. Check API access.')
-      }
-      if (apiError.status === 401) {
-        throw new Error('Authentication failed. Check API key permissions.')
-      }
-      if (apiError.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.')
-      }
-      
-      throw apiError
+    console.log(`[search] Using ${engine} engine for country: ${country}`)
+    
+    // Step 2: Use SerpAPI to get real web search results
+    const searchParams: any = {
+      engine,
+      q: useGoogleShopping ? query : `${query} achat en ligne shop`,
+      api_key: serpApiKey,
+      gl: country.toLowerCase(),
+      hl: "fr",
     }
     
-  } catch (error) {
-    console.error(`[deep:${job.id}] Final error:`, error)
-    set('error', error instanceof Error ? error.message : String(error))
-  }
-}
-
-async function runRechercheJob(job: RechercheJob) {
-  const apiKey = requireOpenAIKey()
-  const openai = new OpenAI({ apiKey, timeout: 3600_000 })
-  
-  const set = (status: RechercheJobStatus, message?: string) => {
-    job.status = status
-    job.message = message
-    job.updatedAt = Date.now()
-  }
-  
-  // Try deep mode first if requested
-  if (job.mode === 'deep') {
-    try {
-      await runDeepResearchJob(openai, job, set)
-      return // Success, exit
-    } catch (error) {
-      console.error(`[${job.id}] Deep research failed, falling back to fast mode:`, error)
-      return
-      // Continue to fast mode as fallback
+    if (useGoogleShopping) {
+      searchParams.num = 20 // Get more results for shopping
+    } else {
+      searchParams.num = 15 // Fewer results for general search
+      searchParams.cr = `country${country.toUpperCase()}` // Country restriction for general search
     }
-  }
-  
-  // Fast mode (original implementation)
-  try {
-    set('analyzing', 'Analyse de la requête…')
-    set('deepsearch', 'Recherche des meilleurs produits…')
     
+    const serpResults = await getJson(searchParams)
+    
+    // Handle different result structures
+    const results = useGoogleShopping 
+      ? serpResults.shopping_results 
+      : serpResults.organic_results
+    
+    console.log(`[search] SerpAPI returned ${results?.length || 0} results using ${engine}`)
+
+    if (!results || results.length === 0) {
+      return {
+        query,
+        products: [],
+        totalFound: 0
+      }
+    }
+
+    // Step 3: Use OpenAI to intelligently select and structure the best products
+    const serpData = results.slice(0, 15) // Take top 15 for AI processing
+    console.log(`[search] SerpAPI data: ${JSON.stringify(serpData, null, 2)}`)
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      temperature: 0.2,
+      
+
+      temperature: 0.1,
       messages: [
         {
           role: 'system',
-          content: 'You are a product meta-search engine. Always return STRICT JSON with shape {"description": string, "products": [{"id": string, "name": string, "price": number, "currency": string, "url": string, "source"?: string, "imageUrl"?: string, "videoUrl"?: string, "snippet"?: string} (max 10 items)]}. Use the ORIGINAL merchant product page for "url" (no aggregators, tracking, or placeholder domains). Only include products that have a direct, publicly fetchable imageUrl (jpg/jpeg/png/webp/gif) or videoUrl (mp4/webm/mov) on the SAME site as the product (same domain or subdomain). Never invent or use example/placeholder domains.'
+          content: `You are a product curation expert. From the provided search results, extract and format the TOP 10 most relevant products for purchase.
+
+SEARCH RESULT TYPES:
+- Shopping results: Direct product listings with prices and images
+- Organic results: General web pages that may contain product information
+
+STRICT REQUIREMENTS:
+- Return JSON: {"products": [{"id": string, "name": string, "price": number, "currency": string, "url": string, "source": string, "imageUrl": string, "snippet": string}]}
+- For shopping results: Use provided price, title, and thumbnail
+- For organic results: Extract product info from title, snippet, and any price mentions, you can visit the page to get more information
+- Keep snippets under 150 characters
+- Price must be numeric (convert from strings like "$99.99" to 99.99, "€50" to 50)
+- Currency should be standard codes (USD, EUR, MAD, etc.)
+- If no price found, you can still return the product with a price of null
+- Use thumbnail/image URLs when available
+- Source should be the domain name (e.g., "amazon.com", "ebay.com")
+
+QUALITY FILTERS:
+- Prioritize results with clear product names and prices
+- Ensure URLs lead to actual product pages
+- Prefer results with images when available`
         },
         {
           role: 'user',
-          content: `Find the top 10 relevant products for: ${job.q}. Keep description <= 400 chars.`,
-        },
-      ],
+          content: `Query: "${query}"\nCountry: ${country}\nSearch Engine: ${engine}\n\nSearch Results:\n${JSON.stringify(serpData, null, 2)}\n\nExtract and format the best 10 products from these ${engine === 'google_shopping' ? 'shopping' : 'organic'} results.`
+        }
+      ]
     })
+
+    const jsonResponse = completion.choices[0]?.message?.content
+    if (!jsonResponse) {
+      throw new Error('No response from OpenAI')
+    }
+
+    const aiResult = JSON.parse(jsonResponse)
+    if (!aiResult.products || !Array.isArray(aiResult.products)) {
+      throw new Error('Invalid AI response structure')
+    }
+
+    console.log(`[search] AI selected ${aiResult} products`)
+
+    // Step 3: Sanitize and verify the products
+    //const sanitized = sanitizeProducts(aiResult.products)
+    //console.log(`[search] ${sanitized.length} products passed sanitization`)
     
-    set('compiling', 'Compilation des résultats…')
-    const jsonText = completion.choices[0]?.message?.content ?? ''
-    const parsed: RechercheResult = JSON.parse(jsonText)
-    const sanitized = sanitizeProducts(parsed.products)
-    const verified = await verifyProductsExist(sanitized)
-    job.result = { ...parsed, products: verified.slice(0, 10) }
-    set('done')
+    //const verified = await verifyProductsExist(sanitized)
+    //const verified = await verifyProductsExist(aiResult.products)
+    const verified = aiResult.products
+    console.log(`[search] ${verified.length} products verified as accessible`)
+
+    return {
+      query,
+      products: verified.slice(0, 10),
+      totalFound: results.length
+    }
+
   } catch (error) {
-    set('error', String(error))
+    console.error('[search] Error:', error)
+    throw error
   }
 }
 
-// Create a recherche job
-app.post('/recherche', async (c) => {
-  const { q, mode } = await c.req.json().catch(() => ({}))
-  if (!q || typeof q !== 'string' || !q.trim()) {
-    return c.json({ error: 'Missing body.q' }, 400)
+// Unified search endpoint
+app.post('/search', async (c) => {
+  try {
+    const { query, country } = await c.req.json().catch(() => ({}))
+    
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return c.json({ error: 'Missing or invalid query parameter' }, 400)
+    }
+
+    const searchCountry = country && typeof country === 'string' ? country.trim() : 'us'
+    const result = await searchProducts(query.trim(), searchCountry)
+    return c.json(result)
+    
+  } catch (error) {
+    console.error('[/search] Error:', error)
+    return c.json({ 
+      error: 'Search failed', 
+      message: error instanceof Error ? error.message : String(error) 
+    }, 500)
   }
-  const id = (globalThis.crypto as any)?.randomUUID?.() ?? Math.random().toString(36).slice(2)
-  const job: RechercheJob = {
-    id,
-    q: q.trim(),
-    status: 'queued',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    mode: mode === 'deep' ? 'deep' : 'fast',
-  }
-  jobs.set(id, job)
-  // Fire-and-forget background execution
-  runRechercheJob(job)
-  return c.json({ id, status: job.status }, 202)
 })
 
-// Get status/result of a recherche job
-app.get('/recherche/:id', (c) => {
-  const id = c.req.param('id')
-  const job = jobs.get(id)
-  if (!job) return c.json({ error: 'Not found' }, 404)
-  return c.json({ id: job.id, status: job.status, message: job.message, result: job.result })
-})
+// Alternative GET endpoint for simple queries
+app.get('/search', async (c) => {
+  try {
+    const query = c.req.query('q')?.trim()
+    const country = c.req.query('country')?.trim() || 'us'
+    
+    if (!query) {
+      return c.json({ error: 'Missing query parameter q' }, 400)
+    }
 
-// Back-compat: GET /recherche?q=...
-app.get('/recherche', (c) => {
-  const q = c.req.query('q')?.trim()
-  if (!q) {
-    return c.json({ error: 'Missing query parameter q' }, 400)
+    const result = await searchProducts(query, country)
+    return c.json(result)
+    
+  } catch (error) {
+    console.error('[/search] Error:', error)
+    return c.json({ 
+      error: 'Search failed', 
+      message: error instanceof Error ? error.message : String(error) 
+    }, 500)
   }
-  const id = (globalThis.crypto as any)?.randomUUID?.() ?? Math.random().toString(36).slice(2)
-  const job: RechercheJob = {
-    id,
-    q,
-    status: 'queued',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    mode: 'fast',
-  }
-  jobs.set(id, job)
-  runRechercheJob(job)
-  return c.json({ id, status: job.status }, 202)
 })
 
 const port = Number(env.PORT ?? 8787)
@@ -435,38 +329,3 @@ export default {
   port,
   fetch: app.fetch,
 }
-
-
-app.get('/test-deep-research', async (c) => {
-  try {
-    const apiKey = requireOpenAIKey()
-    const openai = new OpenAI({ apiKey, timeout: 60000 })
-    
-    const response = await openai.responses.create({
-      model: "o3-deep-research",
-      input: "What are the top 3 smartphones available in 2024? Return as JSON: {products: [{name, price}]}",
-      background: true,
-      tools: [{ type: "web_search_preview" }],
-    } as any)
-    
-    const id = (response as any).id
-    
-    // Wait a bit and check status
-    await new Promise(res => setTimeout(res, 5000))
-    const status = await openai.responses.retrieve(id)
-    
-    return c.json({ 
-      success: true, 
-      id,
-      status: (status as any).status,
-      response: status
-    })
-  } catch (error: any) {
-    return c.json({ 
-      success: false,
-      error: error.message,
-      status: error.status,
-      details: error.response?.data || error
-    }, 500)
-  }
-})
