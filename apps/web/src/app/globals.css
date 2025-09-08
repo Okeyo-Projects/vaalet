@@ -41,6 +41,17 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Additional colors for gradients */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --purple-600: #9333ea;
+  --purple-700: #7c3aed;
+  --pink-600: #db2777;
 }
 
 :root {
@@ -112,11 +123,123 @@
   --sidebar-ring: oklch(0.553 0.013 58.071);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+* {
+  border-color: var(--border);
+  outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+}
+
+body {
+  background: linear-gradient(to bottom right, 
+    var(--gray-50) 0%, 
+    var(--gray-100) 100%
+  );
+  color: var(--foreground);
+}
+
+body:is(.dark *) {
+  background: linear-gradient(to bottom right, 
+    var(--gray-900) 0%, 
+    var(--gray-800) 100%
+  );
+}
+
+/* Modern Gradient Backgrounds */
+.bg-gradient-modern {
+  background: linear-gradient(to bottom right, 
+    var(--gray-50) 0%, 
+    var(--gray-100) 100%
+  );
+}
+
+:is(.dark *) .bg-gradient-modern {
+  background: linear-gradient(to bottom right, 
+    var(--gray-900) 0%, 
+    var(--gray-800) 100%
+  );
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(to right, var(--blue-600), var(--purple-600));
+}
+
+.bg-gradient-primary-hover:hover {
+  background: linear-gradient(to right, var(--blue-700), var(--purple-700));
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: color-mix(in srgb, white 90%, transparent);
+  backdrop-filter: blur(12px);
+  border: 0;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+:is(.dark *) .glass-card {
+  background: color-mix(in srgb, var(--gray-800) 90%, transparent);
+}
+
+.glass-card-subtle {
+  background: color-mix(in srgb, white 80%, transparent);
+  backdrop-filter: blur(8px);
+  border: 0;
+}
+
+:is(.dark *) .glass-card-subtle {
+  background: color-mix(in srgb, var(--gray-800) 80%, transparent);
+}
+
+/* Modern Text Gradients */
+.text-gradient-primary {
+  background: linear-gradient(to right, var(--blue-600), var(--purple-600));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-secondary {
+  background: linear-gradient(to right, var(--purple-600), var(--pink-600));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Modern Button Styles */
+.btn-gradient {
+  background: linear-gradient(to right, var(--blue-600), var(--purple-600));
+  color: white;
+  border: 0;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(to right, var(--blue-700), var(--purple-700));
+}
+
+/* Enhanced Shadows */
+/* .shadow-modern {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+} */
+
+.shadow-modern-hover {
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth Animations */
+.animate-lift {
+  transition: all 0.3s ease-out;
+}
+
+.animate-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* Modern Container */
+.container-modern {
+  container-type: inline-size;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 72rem;
 }

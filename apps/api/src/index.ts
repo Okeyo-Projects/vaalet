@@ -4,6 +4,7 @@ import { env, requireOpenAIKey, requireSerpApiKey } from '@valet/env'
 import { db } from '@valet/db/client'
 import OpenAI from 'openai'
 import { getJson } from 'serpapi'
+import { randomUUID } from 'crypto'
 
 const app = new Hono()
 
@@ -37,6 +38,23 @@ type SearchResult = {
   products: Product[]
   totalFound: number
 }
+
+type JobStatus = 'created' | 'validating' | 'searching' | 'processing' | 'completed' | 'failed'
+
+type SearchJob = {
+  id: string
+  query: string
+  country: string
+  status: JobStatus
+  message: string
+  result?: SearchResult
+  error?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// In-memory job storage (could be replaced with Redis/DB in production)
+const jobs = new Map<string, SearchJob>()
 
 // Media URL validation helpers
 const ALLOWED_MEDIA_EXTENSIONS = new Set([
@@ -158,10 +176,83 @@ const GOOGLE_SHOPPING_SUPPORTED_COUNTRIES = new Set([
   'vg', 'wf'
 ])
 
+// Job status messages in French
+const JOB_MESSAGES = {
+  created: 'Recherche créée',
+  validating: 'Validation des paramètres...',
+  searching: 'Recherche de produits en cours...',
+  processing: 'Analyse des résultats avec l\'IA...',
+  completed: 'Recherche terminée avec succès',
+  failed: 'Erreur lors de la recherche'
+}
+
+function updateJob(jobId: string, updates: Partial<SearchJob>) {
+  const job = jobs.get(jobId)
+  if (!job) return null
+  
+  const updatedJob = {
+    ...job,
+    ...updates,
+    updatedAt: new Date()
+  }
+  
+  jobs.set(jobId, updatedJob)
+  console.log(`[job:${jobId}] Status: ${updatedJob.status} - ${updatedJob.message}`)
+  return updatedJob
+}
 
 
 
-// Unified search function combining SerpAPI + OpenAI
+
+// Background job processing function
+async function processSearchJob(jobId: string) {
+  const job = jobs.get(jobId)
+  if (!job) {
+    console.error(`[job:${jobId}] Job not found`)
+    return
+  }
+
+  try {
+    // Step 1: Validate parameters
+    updateJob(jobId, { status: 'validating', message: JOB_MESSAGES.validating })
+    await new Promise(resolve => setTimeout(resolve, 1000)) // Small delay for better UX
+    
+    if (!GOOGLE_SHOPPING_SUPPORTED_COUNTRIES.has(job.country.toLowerCase())) {
+      updateJob(jobId, { 
+        status: 'failed', 
+        message: JOB_MESSAGES.failed,
+        error: `Pays '${job.country}' non supporté. Pays supportés: ${Array.from(GOOGLE_SHOPPING_SUPPORTED_COUNTRIES).join(', ')}` 
+      })
+      return
+    }
+
+    // Step 2: Search for products
+    updateJob(jobId, { status: 'searching', message: JOB_MESSAGES.searching })
+    
+    const result = await searchProducts(job.query, job.country)
+    
+    // Step 3: Processing (AI analysis already happened in searchProducts, but show the step)
+    updateJob(jobId, { status: 'processing', message: JOB_MESSAGES.processing })
+    await new Promise(resolve => setTimeout(resolve, 500)) // Small delay for UX
+    
+    // Step 3: Processing complete
+    updateJob(jobId, { 
+      status: 'completed', 
+      message: `${JOB_MESSAGES.completed} - ${result.products.length} produits trouvés`,
+      result 
+    })
+
+  } catch (error) {
+    console.error(`[job:${jobId}] Error:`, error)
+    updateJob(jobId, { 
+      status: 'failed', 
+      message: JOB_MESSAGES.failed,
+      error: error instanceof Error ? error.message : 'Erreur inconnue'
+    })
+  }
+}
+
+// Unified search function combining SerpAPI + OpenAI (now used internally by jobs)
 async function searchProducts(query: string, country: string = 'us'): Promise<SearchResult> {
   const serpApiKey = requireSerpApiKey()
   const openaiApiKey = requireOpenAIKey()
@@ -186,7 +277,7 @@ async function searchProducts(query: string, country: string = 'us'): Promise<Se
       q: query,
       api_key: serpApiKey,
       gl: country.toLowerCase(),
-      hl: country.toLowerCase() === 'us' ? 'en' : country.toLowerCase(),
+      hl: country.toLowerCase() === 'fr' ? 'fr' : "en",
       num: 50
     }
     
@@ -259,8 +350,8 @@ QUALITY FILTERS:
   }
 }
 
-// Unified search endpoint
-app.post('/search', async (c) => {
+// Job creation endpoint
+app.post('/jobs', async (c) => {
   try {
     const { query, country } = await c.req.json().catch(() => ({}))
     
@@ -269,38 +360,62 @@ app.post('/search', async (c) => {
     }
 
     const searchCountry = country && typeof country === 'string' ? country.trim() : 'us'
-    const result = await searchProducts(query.trim(), searchCountry)
-    return c.json(result)
+    const jobId = randomUUID()
+    
+    const job: SearchJob = {
+      id: jobId,
+      query: query.trim(),
+      country: searchCountry,
+      status: 'created',
+      message: JOB_MESSAGES.created,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    jobs.set(jobId, job)
+    console.log(`[job:${jobId}] Created job for query: "${job.query}" in country: ${job.country}`)
+    
+    // Start processing in background (don't await)
+    processSearchJob(jobId).catch(error => {
+      console.error(`[job:${jobId}] Background processing failed:`, error)
+    })
+    
+    return c.json({ id: jobId })
     
   } catch (error) {
-    console.error('[/search] Error:', error)
+    console.error('[/jobs] Error:', error)
     return c.json({ 
-      error: 'Search failed', 
+      error: 'Job creation failed', 
       message: error instanceof Error ? error.message : String(error) 
     }, 500)
   }
 })
 
-// Alternative GET endpoint for simple queries
-app.get('/search', async (c) => {
+// Job status endpoint
+app.get('/jobs/:id', async (c) => {
   try {
-    const query = c.req.query('q')?.trim()
-    const country = c.req.query('country')?.trim() || 'us'
+    const jobId = c.req.param('id')
+    const job = jobs.get(jobId)
     
-    if (!query) {
-    return c.json({ error: 'Missing query parameter q' }, 400)
+    if (!job) {
+      return c.json({ error: 'Job not found' }, 404)
   }
 
-    const result = await searchProducts(query, country)
-    return c.json(result)
+    return c.json(job)
     
   } catch (error) {
-    console.error('[/search] Error:', error)
+    console.error(`[/jobs/:id] Error:`, error)
     return c.json({ 
-      error: 'Search failed', 
+      error: 'Failed to get job status', 
       message: error instanceof Error ? error.message : String(error) 
     }, 500)
   }
+})
+
+// Get all jobs (for debugging)
+app.get('/jobs', async (c) => {
+  const allJobs = Array.from(jobs.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  return c.json({ jobs: allJobs })
 })
 
 const port = Number(env.PORT ?? 8787)

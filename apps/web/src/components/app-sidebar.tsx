@@ -3,20 +3,11 @@
 import * as React from "react"
 import {
   IconBell,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
   IconHeart,
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
-  IconMapPin,
-  IconReport,
-  IconSearch,
   IconSettings,
-  IconShoppingCart,
-  IconTag,
-  IconWorld,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -76,28 +67,30 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="offcanvas" className="bg-gradient-modern border-r-0" {...props}>
+      <SidebarHeader className="glass-card-subtle mx-3 mt-3 rounded-xl">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-4 hover:bg-white/20 dark:hover:bg-gray-700/30 transition-all duration-300"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Valet</span>
+              <a href="#" className="group">
+                <div className="p-2 rounded-lg bg-gradient-primary group-hover:scale-110 transition-transform duration-300">
+                  <IconInnerShadowTop className="!size-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Valet</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-3 space-y-2">
         <NavMain items={data.navMain} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="glass-card-subtle mx-3 mb-3 rounded-xl">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
