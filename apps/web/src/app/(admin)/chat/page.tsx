@@ -2,27 +2,12 @@
 
 import { useEffect, useRef, useState, type FormEventHandler } from "react"
 import { useSearchParams } from "next/navigation"
-import { toast } from "sonner"
 import { AIConversation, AIConversationContent, AIConversationScrollButton } from "@/components/ai/conversation"
 import { AIBranch, AIBranchMessages } from "@/components/ai/branch"
 import { AIInput, AIInputSubmit, AIInputTextarea, AIInputToolbar, AIInputTools } from "@/components/ai/input"
-import Image from "next/image"
 import { useRechercheJob } from "@/hooks/useRechercheJob"
 import { ProductCard } from "@/components/ProductCard"
-
-
-
-type RechercheProduct = {
-  id: string
-  name: string
-  price: number
-  currency: string
-  url: string
-  source?: string
-  imageUrl?: string
-  videoUrl?: string
-  snippet?: string
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Page() {
   const searchParams = useSearchParams()
@@ -31,16 +16,16 @@ export default function Page() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState<string>(initialQuery)
-  const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready")
+  const [country, setCountry] = useState<string>("us")
 
-  const { state, search, cancel } = useRechercheJob()
+  const { state, search } = useRechercheJob()
   const [progress, setProgress] = useState<string>("")
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
     if (!text) return
-    setProgress('Création de la recherche…')
-    search(text).catch(() => setProgress('Erreur lors de la création de la recherche.'))
+    setProgress('')
+    search(text, country).catch(() => setProgress('Erreur lors de la recherche.'))
   }
 
   useEffect(() => {
@@ -57,15 +42,8 @@ export default function Page() {
       if (el) el.scrollTop = el.scrollHeight
       bottomRef.current?.scrollIntoView({ block: "end" })
     })
-  }, [status])
+  }, [state.status])
 
-  const handleSuggestionClick = (s: string) => {
-    toast.success("Suggestion clicked", { description: s })
-    setText(s)
-    setStatus("submitted")
-    setTimeout(() => setStatus("streaming"), 200)
-    setTimeout(() => setStatus("ready"), 2000)
-  }
 
   return (
     <div className="flex min-h-[60vh] flex-col">
@@ -76,10 +54,17 @@ export default function Page() {
               <AIBranch defaultBranch={0}>
                 <AIBranchMessages>
                   <>
-                    {state.message || progress ? (
-                      <div className="px-4 py-2 text-sm text-muted-foreground">{state.message || progress}</div>
-                    ) : (
-                      <div className="hidden" />
+                    {(state.message || progress) && (
+                      <div className={`px-4 py-2 text-sm ${
+                        state.status === 'error' ? 'text-red-600' : 'text-muted-foreground'
+                      }`}>
+                        {state.message || progress}
+                      </div>
+                    )}
+                    {state.error && (
+                      <div className="px-4 py-2 text-sm text-red-600 bg-red-50 rounded-md mx-4">
+                        <strong>Erreur:</strong> {state.error}
+                      </div>
                     )}
                   </>
                 </AIBranchMessages>
@@ -109,54 +94,24 @@ export default function Page() {
               <AIInputTextarea value={text} onChange={(e) => setText(e.target.value)} />
               <AIInputToolbar>
                 <AIInputTools>
-                  {/* <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <AIInputButton>
-                        <PlusIcon size={16} />
-                        <span className="sr-only">Add attachment</span>
-                      </AIInputButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem>
-                        <FileIcon className="mr-2" size={16} />
-                        Upload file
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ImageIcon className="mr-2" size={16} />
-                        Upload photo
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ScreenShareIcon className="mr-2" size={16} />
-                        Take screenshot
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <CameraIcon className="mr-2" size={16} />
-                        Take photo
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <AIInputButton variant="ghost">
-                    <MicIcon size={16} />
-                    <span className="sr-only">Microphone</span>
-                  </AIInputButton> */}
-                  {/* <AIInputButton variant="ghost">
-                    <GlobeIcon size={16} />
-                    <span>Search</span>
-                  </AIInputButton>
-                  <AIInputModelSelect value={model} onValueChange={setModel}>
-                    <AIInputModelSelectTrigger>
-                      <AIInputModelSelectValue />
-                    </AIInputModelSelectTrigger>
-                    <AIInputModelSelectContent>
-                      {models.map((m) => (
-                        <AIInputModelSelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </AIInputModelSelectItem>
-                      ))}
-                    </AIInputModelSelectContent>
-                  </AIInputModelSelect> */}
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="w-auto">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="us">🇺🇸 États-Unis</SelectItem>
+                      <SelectItem value="fr">🇫🇷 France</SelectItem>
+                      <SelectItem value="de">🇩🇪 Allemagne</SelectItem>
+                      <SelectItem value="gb">🇬🇧 Royaume-Uni</SelectItem>
+                      <SelectItem value="ca">🇨🇦 Canada</SelectItem>
+                      <SelectItem value="au">🇦🇺 Australie</SelectItem>
+                      <SelectItem value="es">🇪🇸 Espagne</SelectItem>
+                      <SelectItem value="it">🇮🇹 Italie</SelectItem>
+                      <SelectItem value="ma">🇲🇦 Maroc (Non supporté)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </AIInputTools>
-                <AIInputSubmit disabled={!text} status={status} />
+                <AIInputSubmit disabled={!text} status={state.status === 'searching' ? 'streaming' : 'ready'} />
               </AIInputToolbar>
             </AIInput>
           </div>

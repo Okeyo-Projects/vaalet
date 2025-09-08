@@ -158,6 +158,9 @@ const GOOGLE_SHOPPING_SUPPORTED_COUNTRIES = new Set([
   'vg', 'wf'
 ])
 
+
+
+
 // Unified search function combining SerpAPI + OpenAI
 async function searchProducts(query: string, country: string = 'us'): Promise<SearchResult> {
   const serpApiKey = requireSerpApiKey()
@@ -167,36 +170,30 @@ async function searchProducts(query: string, country: string = 'us'): Promise<Se
   try {
     console.log(`[search] Starting search for: "${query}" in country: ${country}`)
     
-    // Step 1: Determine which search engine to use based on country support
+    // Step 1: Check if country is supported by Google Shopping
     const useGoogleShopping = GOOGLE_SHOPPING_SUPPORTED_COUNTRIES.has(country.toLowerCase())
-    const engine = useGoogleShopping ? "google_shopping" : "google"
     
-    console.log(`[search] Using ${engine} engine for country: ${country}`)
-    
-    // Step 2: Use SerpAPI to get real web search results
-    const searchParams: any = {
-      engine,
-      q: useGoogleShopping ? query : `${query} achat en ligne shop`,
-      api_key: serpApiKey,
-      gl: country.toLowerCase(),
-      hl: "fr",
+    if (!useGoogleShopping) {
+      // Return error for unsupported countries
+      throw new Error(`Country '${country}' is not supported. Supported countries: ${Array.from(GOOGLE_SHOPPING_SUPPORTED_COUNTRIES).join(', ')}`)
     }
     
-    if (useGoogleShopping) {
-      searchParams.num = 20 // Get more results for shopping
-    } else {
-      searchParams.num = 15 // Fewer results for general search
-      searchParams.cr = `country${country.toUpperCase()}` // Country restriction for general search
+    // Step 2: Use Google Shopping for supported countries
+    console.log(`[search] Using Google Shopping for supported country: ${country}`)
+    
+    const searchParams: any = {
+      engine: "google_shopping",
+      q: query,
+      api_key: serpApiKey,
+      gl: country.toLowerCase(),
+      hl: country.toLowerCase() === 'us' ? 'en' : country.toLowerCase(),
+      num: 50
     }
     
     const serpResults = await getJson(searchParams)
+    const results = serpResults.shopping_results
     
-    // Handle different result structures
-    const results = useGoogleShopping 
-      ? serpResults.shopping_results 
-      : serpResults.organic_results
-    
-    console.log(`[search] SerpAPI returned ${results?.length || 0} results using ${engine}`)
+    console.log(`[search] Google Shopping returned ${results?.length || 0} results`)
 
     if (!results || results.length === 0) {
       return {
@@ -206,43 +203,34 @@ async function searchProducts(query: string, country: string = 'us'): Promise<Se
       }
     }
 
-    // Step 3: Use OpenAI to intelligently select and structure the best products
-    const serpData = results.slice(0, 15) // Take top 15 for AI processing
-    console.log(`[search] SerpAPI data: ${JSON.stringify(serpData, null, 2)}`)
+    // Step 3: Use OpenAI to process Google Shopping results
+    const serpData = results.slice(0, 15)
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      
-
       temperature: 0.1,
       messages: [
         {
           role: 'system',
-          content: `You are a product curation expert. From the provided search results, extract and format the TOP 10 most relevant products for purchase.
-
-SEARCH RESULT TYPES:
-- Shopping results: Direct product listings with prices and images
-- Organic results: General web pages that may contain product information
+          content: `You are a product curation expert. From the provided Google Shopping results, select and format the TOP 10 most relevant products.
 
 STRICT REQUIREMENTS:
 - Return JSON: {"products": [{"id": string, "name": string, "price": number, "currency": string, "url": string, "source": string, "imageUrl": string, "snippet": string}]}
-- For shopping results: Use provided price, title, and thumbnail
-- For organic results: Extract product info from title, snippet, and any price mentions, you can visit the page to get more information
+- Use provided price, title, and thumbnail from shopping results
+- Generate unique IDs for each product
 - Keep snippets under 150 characters
-- Price must be numeric (convert from strings like "$99.99" to 99.99, "€50" to 50)
-- Currency should be standard codes (USD, EUR, MAD, etc.)
-- If no price found, you can still return the product with a price of null
-- Use thumbnail/image URLs when available
-- Source should be the domain name (e.g., "amazon.com", "ebay.com")
+- Price must be numeric (convert from strings like "$99.99" to 99.99)
+- Currency should be standard codes (USD, EUR, etc.)
+- Use thumbnail URLs when available
+- Source should be the domain name
 
 QUALITY FILTERS:
-- Prioritize results with clear product names and prices
-- Ensure URLs lead to actual product pages
-- Prefer results with images when available`
+- Prioritize products with complete information (price, image, title)
+- Ensure URLs are direct product pages`
         },
         {
           role: 'user',
-          content: `Query: "${query}"\nCountry: ${country}\nSearch Engine: ${engine}\n\nSearch Results:\n${JSON.stringify(serpData, null, 2)}\n\nExtract and format the best 10 products from these ${engine === 'google_shopping' ? 'shopping' : 'organic'} results.`
+          content: `Query: "${query}"\nCountry: ${country}\n\nGoogle Shopping Results:\n${JSON.stringify(serpData, null, 2)}\n\nSelect and format the best 10 products.`
         }
       ]
     })
@@ -257,20 +245,11 @@ QUALITY FILTERS:
       throw new Error('Invalid AI response structure')
     }
 
-    console.log(`[search] AI selected ${aiResult} products`)
-
-    // Step 3: Sanitize and verify the products
-    //const sanitized = sanitizeProducts(aiResult.products)
-    //console.log(`[search] ${sanitized.length} products passed sanitization`)
-    
-    //const verified = await verifyProductsExist(sanitized)
-    //const verified = await verifyProductsExist(aiResult.products)
-    const verified = aiResult.products
-    console.log(`[search] ${verified.length} products verified as accessible`)
+    console.log(`[search] AI selected ${aiResult.products.length} products`)
 
     return {
       query,
-      products: verified.slice(0, 10),
+      products: aiResult.products.slice(0, 10),
       totalFound: results.length
     }
 
@@ -309,8 +288,8 @@ app.get('/search', async (c) => {
     const country = c.req.query('country')?.trim() || 'us'
     
     if (!query) {
-      return c.json({ error: 'Missing query parameter q' }, 400)
-    }
+    return c.json({ error: 'Missing query parameter q' }, 400)
+  }
 
     const result = await searchProducts(query, country)
     return c.json(result)

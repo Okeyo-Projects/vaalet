@@ -16,52 +16,70 @@ export type RechercheProduct = {
 }
 
 export type RechercheState = {
-  status: "idle" | "queued" | "analyzing" | "deepsearch" | "compiling" | "done" | "error"
+  status: "idle" | "searching" | "done" | "error"
   message?: string
   products: RechercheProduct[]
-  jobId?: string
+  error?: string
 }
 
 export function useRechercheJob() {
   const [state, setState] = useState<RechercheState>({ status: "idle", products: [] })
-  const pollRef = useRef<number | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const cancel = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current)
-      pollRef.current = null
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
     }
   }, [])
 
   useEffect(() => cancel, [cancel])
 
-  const search = useCallback(async (q: string) => {
-    cancel()
-    setState({ status: "queued", products: [], message: "Création de la recherche…" })
-    const base = getApiBase()
-    const res = await fetch(`${base}/recherche`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q }),
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const body = await res.json()
-    const id = body.id as string
-    setState((s) => ({ ...s, jobId: id, status: "analyzing", message: "Analyse de la requête…" }))
-    pollRef.current = window.setInterval(async () => {
-      const r = await fetch(`${base}/recherche/${id}`)
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      const data = await r.json()
-      setState((s) => ({ ...s, status: data.status, message: data.message }))
-      if (data.status === 'done' && data.result) {
-        setState({ status: 'done', products: data.result.products || [], jobId: id, message: 'Terminé' })
-        cancel()
+  const search = useCallback(async (q: string, country = 'us') => {
+    try {
+      // Cancel any ongoing request
+      cancel()
+      
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController()
+      
+      setState({ status: "searching", products: [], message: "Recherche en cours…" })
+      
+      const base = getApiBase()
+      const res = await fetch(`${base}/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, country }),
+        signal: abortControllerRef.current.signal
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        const errorMessage = errorData?.message || `HTTP ${res.status}`
+        throw new Error(errorMessage)
       }
-      if (data.status === 'error') {
-        setState((s) => ({ ...s, status: 'error', message: 'Erreur lors de la recherche.' }))
-        cancel()
-      }
-    }, 1500)
+
+      const data = await res.json()
+      
+      setState({ 
+        status: 'done', 
+        products: data.products || [], 
+        message: `Trouvé ${data.products?.length || 0} produits sur ${data.totalFound || 0} résultats`
+      })
+
+    } catch (error: any) {
+      // Don't show error if request was aborted
+      if (error.name === 'AbortError') return
+      
+      setState({ 
+        status: 'error', 
+        products: [], 
+        message: 'Erreur lors de la recherche',
+        error: error.message || 'Une erreur inconnue s\'est produite'
+      })
+    } finally {
+      abortControllerRef.current = null
+    }
   }, [cancel])
 
   return { state, search, cancel }

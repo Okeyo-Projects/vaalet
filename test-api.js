@@ -63,20 +63,16 @@ async function runTests() {
     return
   }
   
-//   console.log('\n' + '='.repeat(50) + '\n')
+  console.log('\n' + '='.repeat(50) + '\n')
   
-//   // Test search functionality with different countries
-//   console.log('🇺🇸 Testing with US (Google Shopping supported):')
-//   await testSearch('wireless headphones', 'us')
+  // Test search functionality with supported countries
+  console.log('🇺🇸 Testing with US (Google Shopping supported):')
+  await testSearch('wireless headphones', 'us')
   
-//   console.log('\n' + '-'.repeat(30) + '\n')
+  console.log('\n' + '-'.repeat(30) + '\n')
   
-//   console.log('🇫🇷 Testing with France (Google Shopping supported):')
-//   await testSearch('iphone 16 pro max titane', 'fr')
-  
-//   console.log('\n' + '-'.repeat(30) + '\n')
-  
-  console.log('🇲🇦 Testing with Morocco (Google Search fallback):')
+  // Test search functionality with unsupported countries - should return error
+  console.log('🇲🇦 Testing with Morocco (unsupported country - should return error):')
   await testSearch('laptop gaming', 'ma')
   
   console.log('\n🎉 Tests completed!')

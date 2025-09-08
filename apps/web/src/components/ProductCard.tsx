@@ -14,7 +14,7 @@ export function ProductCard({ id, name, price, currency, url, imageUrl, snippet 
   return (
     <div className="border rounded-lg overflow-hidden">
       {imageUrl && (
-        <Image src={imageUrl} alt={name} width={640} height={360} className="h-40 w-full object-cover" />
+        <Image src={imageUrl} alt={name} width={640} height={360} className="h-40 w-full object-contain" />
       )}
       <div className="p-3">
         <div className="font-medium line-clamp-2">{name}</div>
