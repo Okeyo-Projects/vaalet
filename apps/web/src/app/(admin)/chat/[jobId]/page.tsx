@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ProductCard } from "@/components/ProductCard"
 import { getApiBase } from "@/lib/api"
+import { useSearchHistory } from "@/contexts/search-history-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, CheckCircle, Clock, AlertCircle, Loader2, Bot, User, Sparkles, Bell, Search, Target, Zap, X, Eye, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react"
@@ -34,6 +35,7 @@ type SearchJob = {
   error?: string
   createdAt: string
   updatedAt: string
+  completedAt?: string | null
 }
 
 const STATUS_MESSAGES = {
@@ -65,6 +67,8 @@ export default function Page() {
   const [trackerModal, setTrackerModal] = useState<{isOpen: boolean, productId: string, productName: string} | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const lastStatusRef = useRef<JobStatus | null>(null)
+  const { refresh: refreshHistory } = useSearchHistory()
 
   useEffect(() => {
     if (!jobId) return
@@ -72,9 +76,15 @@ export default function Page() {
     const fetchJob = async () => {
       try {
         const base = getApiBase()
-        const res = await fetch(`${base}/jobs/${jobId}`)
+        const res = await fetch(`${base}/jobs/${jobId}`, {
+          credentials: 'include',
+        })
         
         if (!res.ok) {
+          if (res.status === 401) {
+            router.replace('/login')
+            return
+          }
           if (res.status === 404) {
             setError('Recherche introuvable')
           } else {
@@ -100,6 +110,16 @@ export default function Page() {
 
     fetchJob()
   }, [jobId])
+
+  useEffect(() => {
+    if (!job) return
+    if (job.status === 'completed' || job.status === 'failed') {
+      if (lastStatusRef.current !== job.status) {
+        lastStatusRef.current = job.status
+        void refreshHistory()
+      }
+    }
+  }, [job, refreshHistory])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -395,7 +415,7 @@ export default function Page() {
                 <div className="glass-card-subtle rounded-2xl rounded-tl-md p-4 shadow-modern">
                   <div className="flex items-center gap-3 mb-2">
                     {STATUS_ICONS[job.status]}
-                    <p className="font-semibold text-gray-900 dark:text-white">Valet</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">Okeyo Ai</p>
                   </div>
                   <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
                     {STATUS_MESSAGES[job.status]}
@@ -407,7 +427,7 @@ export default function Page() {
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Valet • {new Date(job.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  Okeyo Ai • {new Date(job.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
             </div>
@@ -424,7 +444,7 @@ export default function Page() {
                   <div className="glass-card-subtle rounded-2xl rounded-tl-md p-6 shadow-modern">
                     <div className="flex items-center gap-3 mb-4">
                       <Sparkles className="w-5 h-5 text-green-600" />
-                      <p className="font-semibold text-gray-900 dark:text-white">Valet</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">Okeyo Ai</p>
                     </div>
                     <p className="text-gray-800 dark:text-gray-200 mb-4 leading-relaxed">
                       J&apos;ai trouvé <span className="text-gradient-primary font-bold">{job.result.products.length}</span> excellent{job.result.products.length > 1 ? 's' : ''} produit{job.result.products.length > 1 ? 's' : ''} parmi {job.result.totalFound} résultats. Voici ma sélection :
@@ -453,7 +473,7 @@ export default function Page() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Valet • {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    Okeyo Ai • {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
@@ -471,7 +491,7 @@ export default function Page() {
                   <div className="glass-card-subtle rounded-2xl rounded-tl-md p-6 shadow-modern">
                     <div className="flex items-center gap-3 mb-4">
                       <AlertCircle className="w-5 h-5 text-orange-600" />
-                      <p className="font-semibold text-gray-900 dark:text-white">Valet</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">Okeyo Ai</p>
                     </div>
                     <p className="text-gray-800 dark:text-gray-200 mb-4 leading-relaxed">
                       Je n&apos;ai malheureusement trouvé aucun produit correspondant à votre recherche &quot;{job.query}&quot; dans le pays sélectionné.
@@ -489,7 +509,7 @@ export default function Page() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Valet • {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    Okeyo Ai • {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>

@@ -49,6 +49,7 @@ export function useRechercheJob() {
       const res = await fetch(`${base}/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ query: q, country }),
         signal: abortControllerRef.current.signal
       })
@@ -84,5 +85,4 @@ export function useRechercheJob() {
 
   return { state, search, cancel }
 }
-
 

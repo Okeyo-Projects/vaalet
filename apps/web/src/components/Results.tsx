@@ -8,7 +8,7 @@ export function Results({ products, advice }: { products: Product[]; advice?: st
       {advice ? (
         <Card>
           <CardHeader>
-            <CardTitle>Conseil du Valet</CardTitle>
+            <CardTitle>Conseil du Okeyo Ai</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm leading-6">{advice}</p>

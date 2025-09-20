@@ -31,14 +31,23 @@ import {
 
 export function NavUser({
   user,
+  onLogout,
 }: {
   user: {
-    name: string
+    name?: string | null
     email: string
-    avatar: string
+    avatar?: string | null
   }
+  onLogout?: () => Promise<void> | void
 }) {
   const { isMobile } = useSidebar()
+  const displayName = user.name?.trim() || user.email
+  const initials = displayName
+    .split(/[@\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U"
 
   return (
     <SidebarMenu>
@@ -51,15 +60,15 @@ export function NavUser({
             >
               <div className="relative">
                 <Avatar className="h-10 w-10 rounded-xl ring-2 ring-white/20 shadow-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  {user.avatar ? <AvatarImage src={user.avatar} alt={displayName} /> : null}
                   <AvatarFallback className="rounded-xl bg-gradient-primary text-white font-semibold">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-gray-900 dark:text-white">{user.name}</span>
+                <span className="truncate font-semibold text-gray-900 dark:text-white">{displayName}</span>
                 <span className="truncate text-xs text-gray-600 dark:text-gray-300">
                   {user.email}
                 </span>
@@ -78,13 +87,13 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-3 px-3 py-3 text-left text-sm">
                 <Avatar className="h-10 w-10 rounded-xl">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  {user.avatar ? <AvatarImage src={user.avatar} alt={displayName} /> : null}
                   <AvatarFallback className="rounded-xl bg-gradient-primary text-white font-semibold">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold text-gray-900 dark:text-white">{user.name}</span>
+                  <span className="truncate font-semibold text-gray-900 dark:text-white">{displayName}</span>
                   <span className="truncate text-xs text-gray-600 dark:text-gray-300">
                     {user.email}
                   </span>
@@ -113,11 +122,17 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-white/20 dark:bg-gray-700/30" />
-            <DropdownMenuItem className="animate-lift hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg mx-1 my-1 transition-all duration-300">
+            <DropdownMenuItem
+              className="animate-lift hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg mx-1 my-1 transition-all duration-300"
+              onSelect={(event) => {
+                event.preventDefault()
+                void onLogout?.()
+              }}
+            >
               <div className="p-1 rounded-md bg-red-100 dark:bg-red-900/30">
                 <IconLogout className="size-4 text-red-600" />
               </div>
-              <span className="font-medium text-red-700 dark:text-red-300">Log out</span>
+              <span className="font-medium text-red-700 dark:text-red-300">Déconnexion</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

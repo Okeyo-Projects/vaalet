@@ -9,6 +9,8 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().url().optional(),
   OPENAI_API_KEY: z.string().min(1).optional(),
   SERP_API: z.string().min(1).optional(),
+  WEB_APP_URL: z.string().optional(),
+  SESSION_COOKIE_NAME: z.string().min(1).optional(),
 })
 
 export const env = EnvSchema.parse(process.env)
@@ -33,5 +35,4 @@ export function requireSerpApiKey(): string {
   }
   return env.SERP_API
 }
-
 

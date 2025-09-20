@@ -1,14 +1,164 @@
-import { Hono } from 'hono'
+import { Hono, type Context, type MiddlewareHandler } from 'hono'
 import { cors } from 'hono/cors'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { env, requireOpenAIKey, requireSerpApiKey } from '@valet/env'
 import { db } from '@valet/db/client'
+import { searchJobs, sessions, users } from '@valet/db/schema'
 import OpenAI from 'openai'
 import { getJson } from 'serpapi'
-import { randomUUID } from 'crypto'
+import { createHash, randomBytes, randomUUID } from 'crypto'
+import bcrypt from 'bcryptjs'
+import { and, desc, eq } from 'drizzle-orm'
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
+import { z } from 'zod'
 
-const app = new Hono()
+type PublicUser = {
+  id: number
+  email: string
+  name: string | null
+  createdAt: Date
+}
 
-app.use('*', cors())
+type AppVariables = {
+  user: PublicUser
+  sessionId: number
+}
+
+const publicUserColumns = {
+  id: users.id,
+  email: users.email,
+  name: users.name,
+  createdAt: users.createdAt,
+}
+
+const SESSION_COOKIE_NAME = env.SESSION_COOKIE_NAME ?? 'valet_session'
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+}
+
+const allowedOrigins = env.WEB_APP_URL
+  ? env.WEB_APP_URL.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : ['http://localhost:3000']
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().min(1).max(255).optional(),
+})
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+})
+
+const app = new Hono<{ Variables: AppVariables }>()
+
+app.use('*', cors({
+  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+  allowHeaders: ['Content-Type'],
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true,
+}))
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+async function createPasswordHash(password: string): Promise<string> {
+  return bcrypt.hash(password, 12)
+}
+
+async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
+  return bcrypt.compare(password, passwordHash)
+}
+
+function hashSessionToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+async function createSession(userId: number) {
+  const token = randomBytes(32).toString('hex')
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS)
+  const tokenHash = hashSessionToken(token)
+
+  const [created] = await db
+    .insert(sessions)
+    .values({ userId, tokenHash, expiresAt })
+    .returning({ id: sessions.id })
+
+  return { token, expiresAt, sessionId: created.id }
+}
+
+function setSessionCookie(c: Context, token: string, expiresAt: Date) {
+  const maxAge = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000))
+  setCookie(c, SESSION_COOKIE_NAME, token, {
+    ...COOKIE_OPTIONS,
+    maxAge,
+  })
+}
+
+function clearSessionCookie(c: Context) {
+  deleteCookie(c, SESSION_COOKIE_NAME, COOKIE_OPTIONS)
+}
+
+async function getSession(c: Context) {
+  const token = getCookie(c, SESSION_COOKIE_NAME)
+  if (!token) return null
+
+  const tokenHash = hashSessionToken(token)
+
+  const rows = await db
+    .select({
+      sessionId: sessions.id,
+      expiresAt: sessions.expiresAt,
+      userId: users.id,
+      email: users.email,
+      name: users.name,
+      createdAt: users.createdAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.userId, users.id))
+    .where(eq(sessions.tokenHash, tokenHash))
+    .limit(1)
+
+  const row = rows[0]
+  if (!row) {
+    clearSessionCookie(c)
+    return null
+  }
+
+  if (row.expiresAt.getTime() <= Date.now()) {
+    await db.delete(sessions).where(eq(sessions.id, row.sessionId))
+    clearSessionCookie(c)
+    return null
+  }
+
+  return {
+    sessionId: row.sessionId,
+    expiresAt: row.expiresAt,
+    user: {
+      id: row.userId,
+      email: row.email,
+      name: row.name,
+      createdAt: row.createdAt,
+    } satisfies PublicUser,
+  }
+}
+
+const requireAuth: MiddlewareHandler<{ Variables: AppVariables }> = async (c, next) => {
+  const session = await getSession(c)
+  if (!session) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  c.set('user', session.user)
+  c.set('sessionId', session.sessionId)
+  return next()
+}
 
 app.get('/health', (c) => c.json({ ok: true }))
 
@@ -19,6 +169,100 @@ app.get('/db-ping', async (c) => {
   } catch (error) {
     return c.json({ ok: false, error: String(error) }, 500)
   }
+})
+
+app.post('/auth/register', async (c) => {
+  const body = await c.req.json().catch(() => null)
+  const parsed = registerSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json({
+      error: 'Invalid request',
+      issues: parsed.error.flatten(),
+    }, 400)
+  }
+
+  const email = normalizeEmail(parsed.data.email)
+  const name = parsed.data.name?.trim() || null
+
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
+
+  if (existing[0]) {
+    return c.json({ error: 'Email already in use' }, 409)
+  }
+
+  const passwordHash = await createPasswordHash(parsed.data.password)
+
+  const insertUser: InferInsertModel<typeof users> = {
+    email,
+    passwordHash,
+    ...(name ? { name } : {}),
+  }
+
+  const [createdUser] = await db
+    .insert(users)
+    .values(insertUser)
+    .returning(publicUserColumns)
+
+  const session = await createSession(createdUser.id)
+  setSessionCookie(c, session.token, session.expiresAt)
+
+  return c.json({ user: createdUser }, 201)
+})
+
+app.post('/auth/login', async (c) => {
+  const body = await c.req.json().catch(() => null)
+  const parsed = loginSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json({
+      error: 'Invalid request',
+      issues: parsed.error.flatten(),
+    }, 400)
+  }
+
+  const email = normalizeEmail(parsed.data.email)
+
+  const rows = await db
+    .select({
+      ...publicUserColumns,
+      passwordHash: users.passwordHash,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
+
+  const userRow = rows[0]
+
+  if (!userRow) {
+    return c.json({ error: 'Invalid credentials' }, 401)
+  }
+
+  const validPassword = await verifyPassword(parsed.data.password, userRow.passwordHash)
+  if (!validPassword) {
+    return c.json({ error: 'Invalid credentials' }, 401)
+  }
+
+  const session = await createSession(userRow.id)
+  setSessionCookie(c, session.token, session.expiresAt)
+
+  const { passwordHash: _passwordHash, ...user } = userRow
+  return c.json({ user })
+})
+
+app.post('/auth/logout', requireAuth, async (c) => {
+  const sessionId = c.get('sessionId')
+  await db.delete(sessions).where(eq(sessions.id, sessionId))
+  clearSessionCookie(c)
+  return c.json({ success: true })
+})
+
+app.get('/auth/me', requireAuth, (c) => {
+  return c.json({ user: c.get('user') })
 })
 
 // Types for the search response
@@ -51,10 +295,98 @@ type SearchJob = {
   error?: string
   createdAt: Date
   updatedAt: Date
+  completedAt?: Date | null
 }
 
-// In-memory job storage (could be replaced with Redis/DB in production)
-const jobs = new Map<string, SearchJob>()
+type InternalSearchJob = SearchJob & { userId: number }
+
+type SearchJobUpdate = {
+  status?: JobStatus
+  message?: string
+  result?: SearchResult | null
+  error?: string | null
+  completedAt?: Date | null
+}
+
+function mapJobRow(row: InferSelectModel<typeof searchJobs>): InternalSearchJob {
+  const job: InternalSearchJob = {
+    id: row.id,
+    query: row.query,
+    country: row.country,
+    status: row.status as JobStatus,
+    message: row.message,
+    userId: row.userId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    completedAt: row.completedAt ?? undefined,
+  }
+
+  if (row.result) {
+    job.result = row.result as SearchResult
+  }
+  if (row.error) {
+    job.error = row.error
+  }
+
+  return job
+}
+
+function toApiJob(job: InternalSearchJob): SearchJob {
+  const { userId: _userId, ...rest } = job
+  return rest
+}
+
+async function getJob(jobId: string): Promise<InternalSearchJob | null> {
+  const row = await db.query.searchJobs.findFirst({
+    where: eq(searchJobs.id, jobId),
+  })
+
+  return row ? mapJobRow(row) : null
+}
+
+async function getJobForUser(jobId: string, userId: number): Promise<InternalSearchJob | null> {
+  const row = await db.query.searchJobs.findFirst({
+    where: and(eq(searchJobs.id, jobId), eq(searchJobs.userId, userId)),
+  })
+
+  return row ? mapJobRow(row) : null
+}
+
+async function updateJob(jobId: string, updates: SearchJobUpdate) {
+  const updatePayload: Record<string, unknown> = {
+    updatedAt: new Date(),
+  }
+
+  if (updates.status) {
+    updatePayload.status = updates.status
+  }
+  if (updates.message !== undefined) {
+    updatePayload.message = updates.message
+  }
+  if ('result' in updates) {
+    updatePayload.result = updates.result ?? null
+  }
+  if (updates.error !== undefined) {
+    updatePayload.error = updates.error ?? null
+  }
+  if ('completedAt' in updates) {
+    updatePayload.completedAt = updates.completedAt ?? null
+  }
+
+  const [row] = await db
+    .update(searchJobs)
+    .set(updatePayload)
+    .where(eq(searchJobs.id, jobId))
+    .returning()
+
+  if (row) {
+    const job = mapJobRow(row)
+    console.log(`[job:${jobId}] Status: ${job.status} - ${job.message}`)
+    return job
+  }
+
+  return null
+}
 
 // Media URL validation helpers
 const ALLOWED_MEDIA_EXTENSIONS = new Set([
@@ -186,27 +518,9 @@ const JOB_MESSAGES = {
   failed: 'Erreur lors de la recherche'
 }
 
-function updateJob(jobId: string, updates: Partial<SearchJob>) {
-  const job = jobs.get(jobId)
-  if (!job) return null
-  
-  const updatedJob = {
-    ...job,
-    ...updates,
-    updatedAt: new Date()
-  }
-  
-  jobs.set(jobId, updatedJob)
-  console.log(`[job:${jobId}] Status: ${updatedJob.status} - ${updatedJob.message}`)
-  return updatedJob
-}
-
-
-
-
 // Background job processing function
 async function processSearchJob(jobId: string) {
-  const job = jobs.get(jobId)
+  const job = await getJob(jobId)
   if (!job) {
     console.error(`[job:${jobId}] Job not found`)
     return
@@ -214,40 +528,42 @@ async function processSearchJob(jobId: string) {
 
   try {
     // Step 1: Validate parameters
-    updateJob(jobId, { status: 'validating', message: JOB_MESSAGES.validating })
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Small delay for better UX
-    
+    await updateJob(jobId, { status: 'validating', message: JOB_MESSAGES.validating })
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     if (!GOOGLE_SHOPPING_SUPPORTED_COUNTRIES.has(job.country.toLowerCase())) {
-      updateJob(jobId, { 
-        status: 'failed', 
+      await updateJob(jobId, {
+        status: 'failed',
         message: JOB_MESSAGES.failed,
-        error: `Pays '${job.country}' non supporté. Pays supportés: ${Array.from(GOOGLE_SHOPPING_SUPPORTED_COUNTRIES).join(', ')}` 
+        error: `Pays '${job.country}' non supporté. Pays supportés: ${Array.from(GOOGLE_SHOPPING_SUPPORTED_COUNTRIES).join(', ')}`,
+        completedAt: new Date(),
       })
       return
     }
 
     // Step 2: Search for products
-    updateJob(jobId, { status: 'searching', message: JOB_MESSAGES.searching })
-    
-    const result = await searchProducts(job.query, job.country)
-    
-    // Step 3: Processing (AI analysis already happened in searchProducts, but show the step)
-    updateJob(jobId, { status: 'processing', message: JOB_MESSAGES.processing })
-    await new Promise(resolve => setTimeout(resolve, 500)) // Small delay for UX
-    
-    // Step 3: Processing complete
-    updateJob(jobId, { 
-      status: 'completed', 
-      message: `${JOB_MESSAGES.completed} - ${result.products.length} produits trouvés`,
-      result 
-    })
+    await updateJob(jobId, { status: 'searching', message: JOB_MESSAGES.searching })
 
+    const result = await searchProducts(job.query, job.country)
+
+    // Step 3: Processing (AI analysis already happened in searchProducts, but show the step)
+    await updateJob(jobId, { status: 'processing', message: JOB_MESSAGES.processing })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    await updateJob(jobId, {
+      status: 'completed',
+      message: `${JOB_MESSAGES.completed} - ${result.products.length} produits trouvés`,
+      result,
+      error: null,
+      completedAt: new Date(),
+    })
   } catch (error) {
     console.error(`[job:${jobId}] Error:`, error)
-    updateJob(jobId, { 
-      status: 'failed', 
+    await updateJob(jobId, {
+      status: 'failed',
       message: JOB_MESSAGES.failed,
-      error: error instanceof Error ? error.message : 'Erreur inconnue'
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+      completedAt: new Date(),
     })
   }
 }
@@ -295,11 +611,12 @@ async function searchProducts(query: string, country: string = 'us'): Promise<Se
     }
 
     // Step 3: Use OpenAI to process Google Shopping results
-    const serpData = results.slice(0, 15)
+    const serpData = results?.slice(0, 10)
+    console.log(serpData)
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-5-nano",
       response_format: { type: 'json_object' },
-      temperature: 0.1,
+      // temperature: 0.1,
       messages: [
         {
           role: 'system',
@@ -350,9 +667,13 @@ QUALITY FILTERS:
   }
 }
 
+app.use('/jobs', requireAuth)
+app.use('/jobs/*', requireAuth)
+
 // Job creation endpoint
 app.post('/jobs', async (c) => {
   try {
+    const user = c.get('user')
     const { query, country } = await c.req.json().catch(() => ({}))
     
     if (!query || typeof query !== 'string' || !query.trim()) {
@@ -362,18 +683,18 @@ app.post('/jobs', async (c) => {
     const searchCountry = country && typeof country === 'string' ? country.trim() : 'us'
     const jobId = randomUUID()
     
-    const job: SearchJob = {
+    const newJob: typeof searchJobs.$inferInsert = {
       id: jobId,
+      userId: user.id,
       query: query.trim(),
       country: searchCountry,
       status: 'created',
       message: JOB_MESSAGES.created,
-      createdAt: new Date(),
-      updatedAt: new Date()
     }
-    
-    jobs.set(jobId, job)
-    console.log(`[job:${jobId}] Created job for query: "${job.query}" in country: ${job.country}`)
+
+    await db.insert(searchJobs).values(newJob)
+
+    console.log(`[job:${jobId}] Created job for query: "${query.trim()}" in country: ${searchCountry}`)
     
     // Start processing in background (don't await)
     processSearchJob(jobId).catch(error => {
@@ -394,28 +715,38 @@ app.post('/jobs', async (c) => {
 // Job status endpoint
 app.get('/jobs/:id', async (c) => {
   try {
+    const user = c.get('user')
     const jobId = c.req.param('id')
-    const job = jobs.get(jobId)
-    
+    const job = await getJobForUser(jobId, user.id)
+
     if (!job) {
       return c.json({ error: 'Job not found' }, 404)
-  }
+    }
 
-    return c.json(job)
-    
+    return c.json(toApiJob(job))
   } catch (error) {
     console.error(`[/jobs/:id] Error:`, error)
-    return c.json({ 
-      error: 'Failed to get job status', 
-      message: error instanceof Error ? error.message : String(error) 
+    return c.json({
+      error: 'Failed to get job status',
+      message: error instanceof Error ? error.message : String(error),
     }, 500)
   }
 })
 
-// Get all jobs (for debugging)
 app.get('/jobs', async (c) => {
-  const allJobs = Array.from(jobs.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-  return c.json({ jobs: allJobs })
+  const user = c.get('user')
+  const limitParam = Number(c.req.query('limit') ?? '20')
+  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.trunc(limitParam), 1), 100) : 20
+
+  const rows = await db
+    .select()
+    .from(searchJobs)
+    .where(eq(searchJobs.userId, user.id))
+    .orderBy(desc(searchJobs.createdAt))
+    .limit(limit)
+
+  const jobs = rows.map((row) => toApiJob(mapJobRow(row)))
+  return c.json({ jobs })
 })
 
 const port = Number(env.PORT ?? 8787)

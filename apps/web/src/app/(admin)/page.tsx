@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApiBase } from "@/lib/api"
+import { useSearchHistory } from "@/contexts/search-history-context"
 import { Loader2, Send, ImagePlus, Mic } from "lucide-react"
 import { toast } from "sonner"
 
 export default function Page() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { refresh: refreshHistory } = useSearchHistory()
   const [query, setQuery] = useState("")
   const [country, setCountry] = useState("fr")
   const [isLoading, setIsLoading] = useState(false)
@@ -36,15 +38,21 @@ export default function Page() {
       const res = await fetch(`${base}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ query: q, country })
       })
       
       if (!res.ok) {
+        if (res.status === 401) {
+          router.replace('/login')
+          return
+        }
         const errorData = await res.json().catch(() => null)
         throw new Error(errorData?.message || `HTTP ${res.status}`)
       }
       
       const { id } = await res.json()
+      void refreshHistory()
       router.push(`/chat/${id}`)
       
     } catch (error) {
@@ -208,7 +216,7 @@ export default function Page() {
           
           {/* Subtle Helper Text */}
           <p className="text-center text-sm text-gray-400 mt-4">
-            Valet peut vous aider à trouver les meilleurs produits aux meilleurs prix
+            Okeyo Ai peut vous aider à trouver les meilleurs produits aux meilleurs prix
           </p>
         </div>
         

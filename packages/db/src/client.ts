@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { requireDatabaseUrl } from '@valet/env'
+import * as schema from './schema'
 
 let _client: ReturnType<typeof postgres> | undefined
 
@@ -14,6 +15,5 @@ function getClient() {
   return _client
 }
 
-export const db = drizzle({ client: getClient() })
-
+export const db = drizzle(getClient(), { schema })
 

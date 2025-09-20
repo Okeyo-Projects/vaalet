@@ -30,7 +30,7 @@ export default function Page() {
           <div>
             <p className="font-medium">Besoin d’assistance ?</p>
             <p className="text-sm text-muted-foreground">
-              Écrivez‑nous: support@valet.app
+              Écrivez‑nous: support@okeyo.ai
             </p>
           </div>
         </CardContent>

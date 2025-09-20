@@ -14,7 +14,7 @@ export function Chat() {
       id: 'welcome',
       role: 'assistant',
       content:
-        "Bonjour, je suis votre Valet. Je suis à votre entière disposition. Dites-moi ce que vous cherchez.",
+        "Bonjour, je suis votre Okeyo Ai. Je suis à votre entière disposition. Dites-moi ce que vous cherchez.",
     },
   ])
 
