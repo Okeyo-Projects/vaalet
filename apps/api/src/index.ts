@@ -3,7 +3,7 @@ import { cors } from 'hono/cors'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { env, requireOpenAIKey, requireSerpApiKey } from '@valet/env'
 import { db } from '@valet/db/client'
-import { searchJobs, sessions, users } from '@valet/db/schema'
+import { alerts, favorites, searchJobs, sessions, users } from '@valet/db/schema'
 import OpenAI from 'openai'
 import { getJson } from 'serpapi'
 import { createHash, randomBytes, randomUUID } from 'crypto'
@@ -54,6 +54,40 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+})
+
+const alertObjectiveSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('price_below'),
+    targetPrice: z.number().positive(),
+  }),
+  z.object({
+    type: z.literal('price_range'),
+    minPrice: z.number().nonnegative(),
+    maxPrice: z.number().positive(),
+  }),
+  z.object({
+    type: z.literal('price_drop_percent'),
+    dropPercent: z.number().positive(),
+  }),
+])
+
+const createAlertSchema = z.object({
+  jobId: z.string().uuid().optional(),
+  query: z.string().min(1),
+  country: z.string().min(1).max(8),
+  objective: alertObjectiveSchema,
+})
+
+const createFavoriteSchema = z.object({
+  productId: z.string().min(1),
+  name: z.string().min(1),
+  price: z.number().nonnegative().optional(),
+  currency: z.string().min(1).max(8),
+  url: z.string().url(),
+  imageUrl: z.string().url().optional(),
+  snippet: z.string().optional(),
+  source: z.string().optional(),
 })
 
 const app = new Hono<{ Variables: AppVariables }>()
@@ -308,6 +342,39 @@ type SearchJobUpdate = {
   completedAt?: Date | null
 }
 
+type AlertRecord = InferSelectModel<typeof alerts>
+
+type ApiAlert = {
+  id: number
+  jobId: string | null
+  query: string
+  country: string
+  objectiveType: string
+  targetPrice: number | null
+  minPrice: number | null
+  maxPrice: number | null
+  dropPercent: number | null
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+type FavoriteRecord = InferSelectModel<typeof favorites>
+
+type ApiFavorite = {
+  id: number
+  productId: string
+  name: string
+  price: number | null
+  currency: string
+  url: string
+  imageUrl: string | null
+  snippet: string | null
+  source: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
 function mapJobRow(row: InferSelectModel<typeof searchJobs>): InternalSearchJob {
   const job: InternalSearchJob = {
     id: row.id,
@@ -334,6 +401,45 @@ function mapJobRow(row: InferSelectModel<typeof searchJobs>): InternalSearchJob 
 function toApiJob(job: InternalSearchJob): SearchJob {
   const { userId: _userId, ...rest } = job
   return rest
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
+function mapAlertRow(row: AlertRecord): ApiAlert {
+  return {
+    id: row.id,
+    jobId: row.jobId,
+    query: row.query,
+    country: row.country,
+    objectiveType: row.objectiveType,
+    targetPrice: toNumberOrNull(row.targetPrice),
+    minPrice: toNumberOrNull(row.minPrice),
+    maxPrice: toNumberOrNull(row.maxPrice),
+    dropPercent: toNumberOrNull(row.dropPercent),
+    isActive: row.isActive,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+function mapFavoriteRow(row: FavoriteRecord): ApiFavorite {
+  return {
+    id: row.id,
+    productId: row.productId,
+    name: row.name,
+    price: toNumberOrNull(row.price),
+    currency: row.currency,
+    url: row.url,
+    imageUrl: row.imageUrl ?? null,
+    snippet: row.snippet ?? null,
+    source: row.source ?? null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
 }
 
 async function getJob(jobId: string): Promise<InternalSearchJob | null> {
@@ -747,6 +853,126 @@ app.get('/jobs', async (c) => {
 
   const jobs = rows.map((row) => toApiJob(mapJobRow(row)))
   return c.json({ jobs })
+})
+
+app.post('/alerts', requireAuth, async (c) => {
+  const user = c.get('user')
+  const body = await c.req.json().catch(() => null)
+  const parsed = createAlertSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request', issues: parsed.error.flatten() }, 400)
+  }
+
+  const { jobId, query, country, objective } = parsed.data
+
+  let finalQuery = query
+  let finalCountry = country
+  let resolvedJobId: string | null = null
+
+  if (jobId) {
+    const job = await getJobForUser(jobId, user.id)
+    if (!job) {
+      return c.json({ error: 'Job not found' }, 404)
+    }
+    resolvedJobId = jobId
+    finalQuery = job.query
+    finalCountry = job.country
+  }
+
+  if (objective.type === 'price_range' && objective.maxPrice <= objective.minPrice) {
+    return c.json({ error: 'maxPrice must be greater than minPrice' }, 400)
+  }
+
+  const insertAlert = {
+    userId: user.id,
+    jobId: resolvedJobId ?? null,
+    query: finalQuery,
+    country: finalCountry,
+    objectiveType: objective.type,
+    targetPrice: objective.type === 'price_below' ? objective.targetPrice.toString() : null,
+    minPrice: objective.type === 'price_range' ? objective.minPrice.toString() : null,
+    maxPrice: objective.type === 'price_range' ? objective.maxPrice.toString() : null,
+    dropPercent: objective.type === 'price_drop_percent' ? objective.dropPercent.toString() : null,
+  }
+
+  const [row] = await db
+    .insert(alerts)
+    .values(insertAlert as typeof alerts.$inferInsert)
+    .returning()
+
+  return c.json({ alert: mapAlertRow(row) }, 201)
+})
+
+app.get('/alerts', requireAuth, async (c) => {
+  const user = c.get('user')
+  const rows = await db
+    .select()
+    .from(alerts)
+    .where(eq(alerts.userId, user.id))
+    .orderBy(desc(alerts.createdAt))
+
+  return c.json({ alerts: rows.map(mapAlertRow) })
+})
+
+app.post('/favorites', requireAuth, async (c) => {
+  const user = c.get('user')
+  const body = await c.req.json().catch(() => null)
+  const parsed = createFavoriteSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid request', issues: parsed.error.flatten() }, 400)
+  }
+
+  const { productId, name, price, currency, url, imageUrl, snippet, source } = parsed.data
+
+  const insertFavorite = {
+    userId: user.id,
+    productId,
+    name,
+    price: price !== undefined ? price.toString() : null,
+    currency,
+    url,
+    imageUrl: imageUrl ?? null,
+    snippet: snippet ?? null,
+    source: source ?? null,
+  }
+
+  const updateFavoriteSet: Record<string, unknown> = {
+    name,
+    currency,
+    url,
+    imageUrl: imageUrl ?? null,
+    snippet: snippet ?? null,
+    source: source ?? null,
+    updatedAt: new Date(),
+  }
+
+  if (price !== undefined) {
+    updateFavoriteSet.price = price.toString()
+  }
+
+  const [row] = await db
+    .insert(favorites)
+    .values(insertFavorite as typeof favorites.$inferInsert)
+    .onConflictDoUpdate({
+      target: [favorites.userId, favorites.productId],
+      set: updateFavoriteSet as Partial<typeof favorites.$inferInsert>,
+    })
+    .returning()
+
+  return c.json({ favorite: mapFavoriteRow(row) }, 201)
+})
+
+app.get('/favorites', requireAuth, async (c) => {
+  const user = c.get('user')
+  const rows = await db
+    .select()
+    .from(favorites)
+    .where(eq(favorites.userId, user.id))
+    .orderBy(desc(favorites.createdAt))
+
+  return c.json({ favorites: rows.map(mapFavoriteRow) })
 })
 
 const port = Number(env.PORT ?? 8787)

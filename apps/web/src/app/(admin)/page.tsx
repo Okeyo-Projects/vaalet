@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApiBase } from "@/lib/api"
 import { useSearchHistory } from "@/contexts/search-history-context"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Send, ImagePlus, Mic } from "lucide-react"
 import { toast } from "sonner"
 
@@ -14,9 +15,40 @@ export default function Page() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { refresh: refreshHistory } = useSearchHistory()
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState("")
   const [country, setCountry] = useState("fr")
-  const [isLoading, setIsLoading] = useState(false)
+  const createJobMutation = useMutation({
+    mutationFn: async ({ query, country }: { query: string; country: string }) => {
+      const base = getApiBase()
+      const res = await fetch(`${base}/jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ query, country }),
+      })
+
+      if (res.status === 401) {
+        const error = new Error("Unauthorized") as Error & { status?: number }
+        error.status = 401
+        throw error
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        const message = errorData?.message || `HTTP ${res.status}`
+        throw new Error(message)
+      }
+
+      const data = (await res.json()) as { id: string }
+      return data.id
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["search-history"], exact: false })
+    },
+  })
+
+  const isLoading = createJobMutation.isPending
 
   // Initialize query from URL parameter
   useEffect(() => {
@@ -31,37 +63,20 @@ export default function Page() {
     const q = query.trim()
     if (!q) return
     
-    setIsLoading(true)
-    
     try {
-      const base = getApiBase()
-      const res = await fetch(`${base}/jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: q, country })
-      })
-      
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.replace('/login')
-          return
-        }
-        const errorData = await res.json().catch(() => null)
-        throw new Error(errorData?.message || `HTTP ${res.status}`)
-      }
-      
-      const { id } = await res.json()
+      const id = await createJobMutation.mutateAsync({ query: q, country })
       void refreshHistory()
       router.push(`/chat/${id}`)
       
     } catch (error) {
+      if (error && typeof error === "object" && "status" in error && (error as { status?: number }).status === 401) {
+        router.replace('/login')
+        return
+      }
       console.error('Job creation failed:', error)
       toast.error('Erreur lors de la création de la recherche', {
         description: error instanceof Error ? error.message : 'Une erreur inconnue s\'est produite'
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 

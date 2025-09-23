@@ -1,6 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useMutation } from "@tanstack/react-query"
+
 import { getApiBase } from "@/lib/api"
 
 export type RechercheProduct = {
@@ -22,8 +24,18 @@ export type RechercheState = {
   error?: string
 }
 
+type RechercheVariables = {
+  query: string
+  country: string
+  controller: AbortController
+}
+
+type RechercheResponse = {
+  products?: RechercheProduct[]
+  totalFound?: number
+}
+
 export function useRechercheJob() {
-  const [state, setState] = useState<RechercheState>({ status: "idle", products: [] })
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const cancel = useCallback(() => {
@@ -35,54 +47,77 @@ export function useRechercheJob() {
 
   useEffect(() => cancel, [cancel])
 
-  const search = useCallback(async (q: string, country = 'us') => {
-    try {
-      // Cancel any ongoing request
-      cancel()
-      
-      // Create new abort controller for this request
-      abortControllerRef.current = new AbortController()
-      
-      setState({ status: "searching", products: [], message: "Recherche en cours…" })
-      
+  const mutation = useMutation<RechercheResponse, Error, RechercheVariables>({
+    mutationFn: async ({ query, country, controller }) => {
       const base = getApiBase()
       const res = await fetch(`${base}/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: q, country }),
-        signal: abortControllerRef.current.signal
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ query, country }),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => null)
-        const errorMessage = errorData?.message || `HTTP ${res.status}`
-        throw new Error(errorMessage)
+        const message = errorData?.message || `HTTP ${res.status}`
+        throw new Error(message)
       }
 
-      const data = await res.json()
-      
-      setState({ 
-        status: 'done', 
-        products: data.products || [], 
-        message: `Trouvé ${data.products?.length || 0} produits sur ${data.totalFound || 0} résultats`
-      })
-
-    } catch (error: any) {
-      // Don't show error if request was aborted
-      if (error.name === 'AbortError') return
-      
-      setState({ 
-        status: 'error', 
-        products: [], 
-        message: 'Erreur lors de la recherche',
-        error: error.message || 'Une erreur inconnue s\'est produite'
-      })
-    } finally {
+      return (await res.json()) as RechercheResponse
+    },
+    onSettled: () => {
       abortControllerRef.current = null
+    },
+  })
+
+  const search = useCallback(
+    async (q: string, country = "us") => {
+      cancel()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+      try {
+        await mutation.mutateAsync({ query: q, country, controller })
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return
+        }
+        console.error("Recherche failed", error)
+      }
+    },
+    [cancel, mutation]
+  )
+
+  const state: RechercheState = useMemo(() => {
+    if (mutation.isPending) {
+      return {
+        status: "searching",
+        products: [],
+        message: "Recherche en cours…",
+      }
     }
-  }, [cancel])
+
+    if (mutation.isError) {
+      return {
+        status: "error",
+        products: [],
+        message: "Erreur lors de la recherche",
+        error: mutation.error.message,
+      }
+    }
+
+    if (mutation.isSuccess) {
+      const products = mutation.data.products ?? []
+      const totalFound = mutation.data.totalFound ?? products.length
+      return {
+        status: "done",
+        products,
+        message: `Trouvé ${products.length} produits sur ${totalFound} résultats`,
+      }
+    }
+
+    return { status: "idle", products: [] }
+  }, [mutation.isPending, mutation.isError, mutation.isSuccess, mutation.data, mutation.error])
 
   return { state, search, cancel }
 }
-

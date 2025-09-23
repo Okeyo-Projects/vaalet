@@ -1,6 +1,17 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+
 import { getApiBase } from "@/lib/api"
 
 export type AuthUser = {
@@ -25,6 +36,8 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+const AUTH_QUERY_KEY = ["auth", "me"] as const
+
 async function parseError(res: Response): Promise<string> {
   try {
     const data = await res.json()
@@ -44,42 +57,40 @@ async function parseError(res: Response): Promise<string> {
   return `HTTP ${res.status}`
 }
 
+async function fetchCurrentUser(): Promise<AuthUser | null> {
+  const base = getApiBase()
+  const res = await fetch(`${base}/auth/me`, {
+    credentials: "include",
+  })
+
+  if (res.status === 401) {
+    return null
+  }
+
+  if (!res.ok) {
+    throw new Error(await parseError(res))
+  }
+
+  const data = (await res.json()) as { user: AuthUser }
+  return data.user
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
 
-  const refresh = useCallback(async (withLoading = false) => {
-    if (withLoading) {
-      setIsLoading(true)
-    }
+  const {
+    data: user = null,
+    isPending,
+    refetch,
+  } = useQuery({
+    queryKey: AUTH_QUERY_KEY,
+    queryFn: fetchCurrentUser,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  })
 
-    try {
-      const base = getApiBase()
-      const res = await fetch(`${base}/auth/me`, {
-        credentials: "include",
-      })
-
-      if (!res.ok) {
-        setUser(null)
-        return
-      }
-
-      const data = (await res.json()) as { user: AuthUser }
-      setUser(data.user)
-    } catch (error) {
-      console.error("Failed to refresh session", error)
-      setUser(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void refresh(true)
-  }, [refresh])
-
-  const login = useCallback<AuthContextValue["login"]>(async ({ email, password }) => {
-    try {
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const base = getApiBase()
       const res = await fetch(`${base}/auth/login`, {
         method: "POST",
@@ -89,20 +100,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (!res.ok) {
-        return { success: false, error: await parseError(res) }
+        throw new Error(await parseError(res))
       }
 
       const data = (await res.json()) as { user: AuthUser }
-      setUser(data.user)
-      return { success: true }
-    } catch (error) {
-      console.error("Login failed", error)
-      return { success: false, error: "Impossible de se connecter. Veuillez réessayer." }
-    }
-  }, [])
+      return data.user
+    },
+    onSuccess: (nextUser) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, nextUser)
+      queryClient.invalidateQueries({ queryKey: ["search-history"], exact: false })
+    },
+  })
 
-  const register = useCallback<AuthContextValue["register"]>(async ({ email, password, name }) => {
-    try {
+  const registerMutation = useMutation({
+    mutationFn: async ({ email, password, name }: { email: string; password: string; name?: string }) => {
       const base = getApiBase()
       const res = await fetch(`${base}/auth/register`, {
         method: "POST",
@@ -112,40 +123,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (!res.ok) {
-        return { success: false, error: await parseError(res) }
+        throw new Error(await parseError(res))
       }
 
       const data = (await res.json()) as { user: AuthUser }
-      setUser(data.user)
-      return { success: true }
-    } catch (error) {
-      console.error("Registration failed", error)
-      return { success: false, error: "Impossible de créer le compte. Veuillez réessayer." }
-    }
-  }, [])
+      return data.user
+    },
+    onSuccess: (nextUser) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, nextUser)
+      queryClient.invalidateQueries({ queryKey: ["search-history"], exact: false })
+    },
+  })
 
-  const logout = useCallback(async () => {
-    try {
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
       const base = getApiBase()
-      await fetch(`${base}/auth/logout`, {
+      const res = await fetch(`${base}/auth/logout`, {
         method: "POST",
         credentials: "include",
       })
+
+      if (!res.ok) {
+        throw new Error(await parseError(res))
+      }
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, null)
+      queryClient.removeQueries({ queryKey: ["search-history"], exact: false })
+    },
+  })
+
+  const login = useCallback<AuthContextValue["login"]>(
+    async (input) => {
+      try {
+        await loginMutation.mutateAsync(input)
+        return { success: true }
+      } catch (error) {
+        console.error("Login failed", error)
+        const message = error instanceof Error ? error.message : "Impossible de se connecter. Veuillez réessayer."
+        return { success: false, error: message }
+      }
+    },
+    [loginMutation]
+  )
+
+  const register = useCallback<AuthContextValue["register"]>(
+    async (input) => {
+      try {
+        await registerMutation.mutateAsync(input)
+        return { success: true }
+      } catch (error) {
+        console.error("Registration failed", error)
+        const message = error instanceof Error ? error.message : "Impossible de créer le compte. Veuillez réessayer."
+        return { success: false, error: message }
+      }
+    },
+    [registerMutation]
+  )
+
+  const logout = useCallback(async () => {
+    try {
+      await logoutMutation.mutateAsync()
     } catch (error) {
       console.error("Logout failed", error)
-    } finally {
-      setUser(null)
+      queryClient.setQueryData(AUTH_QUERY_KEY, null)
     }
-  }, [])
+  }, [logoutMutation, queryClient])
 
-  const value = useMemo<AuthContextValue>(() => ({
-    user,
-    isLoading,
-    login,
-    register,
-    logout,
-    refresh: () => refresh(false),
-  }), [user, isLoading, login, register, logout, refresh])
+  const refresh = useCallback(async () => {
+    await refetch()
+  }, [refetch])
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isLoading: isPending,
+      login,
+      register,
+      logout,
+      refresh,
+    }),
+    [user, isPending, login, register, logout, refresh]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

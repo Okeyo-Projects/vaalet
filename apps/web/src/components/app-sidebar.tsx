@@ -113,10 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-3 mt-2 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-700 dark:text-blue-200 hover:from-blue-500/30 hover:to-purple-500/30"
             >
-              <Link href="/">
-                <IconPlus className="size-4" />
-                <span>Nouvelle recherche</span>
-              </Link>
+     
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

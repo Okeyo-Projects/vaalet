@@ -10,10 +10,20 @@ export type ProductCardProps = {
   url: string
   imageUrl?: string
   snippet?: string
-  onTracker?: (productId: string, productName: string) => void
+  source?: string
+  onTracker?: (product: {
+    id: string
+    name: string
+    price: number
+    currency: string
+    url: string
+    imageUrl?: string
+    snippet?: string
+    source?: string
+  }) => void
 }
 
-export function ProductCard({ id, name, price, currency, url, imageUrl, snippet, onTracker }: ProductCardProps) {
+export function ProductCard({ id, name, price, currency, url, imageUrl, snippet, source, onTracker }: ProductCardProps) {
 
   return (
     <div className="glass-card-subtle animate-lift group overflow-hidden rounded-xl pt-3 flex flex-col h-full">
@@ -63,7 +73,9 @@ export function ProductCard({ id, name, price, currency, url, imageUrl, snippet,
         <Button 
           variant="outline" 
           size="default"
-          onClick={() => onTracker?.(id, name)}
+          onClick={() =>
+            onTracker?.({ id, name, price, currency, url, imageUrl, snippet, source })
+          }
         >
           <Eye className="w-4 h-4" />
           Tracker
@@ -73,5 +85,4 @@ export function ProductCard({ id, name, price, currency, url, imageUrl, snippet,
     </div>
   )
 }
-
 

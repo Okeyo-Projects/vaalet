@@ -1,6 +1,12 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { getApiBase } from "@/lib/api"
 
@@ -29,51 +35,51 @@ export type SearchHistoryContextValue = {
 
 const SearchHistoryContext = createContext<SearchHistoryContextValue | undefined>(undefined)
 
+async function fetchHistory(): Promise<SearchHistoryJob[]> {
+  const base = getApiBase()
+  const res = await fetch(`${base}/jobs?limit=50`, {
+    credentials: "include",
+  })
+
+  if (res.status === 401) {
+    return []
+  }
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+
+  const data = (await res.json()) as { jobs?: SearchHistoryJob[] }
+  return Array.isArray(data.jobs) ? data.jobs : []
+}
+
 export function SearchHistoryProvider({ children }: { children: React.ReactNode }) {
-  const { user, isLoading: authLoading } = useAuth()
-  const [jobs, setJobs] = useState<SearchHistoryJob[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const { user } = useAuth()
+
+  const {
+    data = [],
+    isPending,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: ["search-history", user?.id ?? "guest"] as const,
+    queryFn: fetchHistory,
+    enabled: Boolean(user),
+    refetchOnWindowFocus: false,
+  })
 
   const refresh = useCallback(async () => {
-    if (!user) {
-      setJobs([])
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const base = getApiBase()
-      const res = await fetch(`${base}/jobs?limit=50`, {
-        credentials: "include",
-      })
-
-      if (res.status === 401) {
-        setJobs([])
-        return
-      }
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`)
-      }
-
-      const data = (await res.json()) as { jobs?: SearchHistoryJob[] }
-      setJobs(Array.isArray(data.jobs) ? data.jobs : [])
-    } catch (error) {
-      console.error("Failed to load search history", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user])
-
-  useEffect(() => {
-    if (authLoading) return
-    void refresh()
-  }, [authLoading, refresh])
+    if (!user) return
+    await refetch()
+  }, [user, refetch])
 
   const value = useMemo<SearchHistoryContextValue>(
-    () => ({ jobs, isLoading, refresh }),
-    [jobs, isLoading, refresh]
+    () => ({
+      jobs: user ? data : [],
+      isLoading: Boolean(user) && (isPending || isFetching),
+      refresh,
+    }),
+    [user, data, isPending, isFetching, refresh]
   )
 
   return (
