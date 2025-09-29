@@ -1,15 +1,15 @@
-import { Hono, type Context, type MiddlewareHandler } from 'hono'
-import { cors } from 'hono/cors'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
-import { env, requireOpenAIKey, requireSerpApiKey } from '@valet/env'
 import { db } from '@valet/db/client'
 import { alerts, favorites, searchJobs, sessions, users } from '@valet/db/schema'
+import { env, requireOpenAIKey, requireSerpApiKey } from '@valet/env'
+import bcrypt from 'bcryptjs'
+import { createHash, randomBytes, randomUUID } from 'crypto'
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
+import { Hono, type Context, type MiddlewareHandler } from 'hono'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { cors } from 'hono/cors'
 import OpenAI from 'openai'
 import { getJson } from 'serpapi'
-import { createHash, randomBytes, randomUUID } from 'crypto'
-import bcrypt from 'bcryptjs'
-import { and, desc, eq } from 'drizzle-orm'
-import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 import { z } from 'zod'
 
 type PublicUser = {
@@ -43,7 +43,7 @@ const COOKIE_OPTIONS = {
 
 const allowedOrigins = env.WEB_APP_URL
   ? env.WEB_APP_URL.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : ['http://localhost:3000']
+  : ['http://localhost:8800']
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -93,9 +93,9 @@ const createFavoriteSchema = z.object({
 const app = new Hono<{ Variables: AppVariables }>()
 
 app.use('*', cors({
-  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
-  allowHeaders: ['Content-Type'],
-  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  origin: (origin) => origin || '*',
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   credentials: true,
 }))
 

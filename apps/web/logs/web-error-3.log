@@ -1,0 +1,193 @@
+2025-09-24T20:21:39: $ next start
+2025-09-24T20:21:39:  ⨯ Failed to start server
+2025-09-24T20:21:39: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:39:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:39:     at new Promise (<anonymous>) {
+2025-09-24T20:21:39:   code: 'EADDRINUSE',
+2025-09-24T20:21:39:   errno: -98,
+2025-09-24T20:21:39:   syscall: 'listen',
+2025-09-24T20:21:39:   address: '::',
+2025-09-24T20:21:39:   port: 8800
+2025-09-24T20:21:39: }
+2025-09-24T20:21:39: error: script "start" exited with code 1
+2025-09-24T20:21:39: $ next start
+2025-09-24T20:21:39:  ⨯ Failed to start server
+2025-09-24T20:21:40: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:40:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:40:     at new Promise (<anonymous>) {
+2025-09-24T20:21:40:   code: 'EADDRINUSE',
+2025-09-24T20:21:40:   errno: -98,
+2025-09-24T20:21:40:   syscall: 'listen',
+2025-09-24T20:21:40:   address: '::',
+2025-09-24T20:21:40:   port: 8800
+2025-09-24T20:21:40: }
+2025-09-24T20:21:40: error: script "start" exited with code 1
+2025-09-24T20:21:40: $ next start
+2025-09-24T20:21:40:  ⨯ Failed to start server
+2025-09-24T20:21:40: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:40:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:40:     at new Promise (<anonymous>) {
+2025-09-24T20:21:40:   code: 'EADDRINUSE',
+2025-09-24T20:21:40:   errno: -98,
+2025-09-24T20:21:40:   syscall: 'listen',
+2025-09-24T20:21:40:   address: '::',
+2025-09-24T20:21:40:   port: 8800
+2025-09-24T20:21:40: }
+2025-09-24T20:21:40: error: script "start" exited with code 1
+2025-09-24T20:21:40: $ next start
+2025-09-24T20:21:40:  ⨯ Failed to start server
+2025-09-24T20:21:40: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:40:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:40:     at new Promise (<anonymous>) {
+2025-09-24T20:21:40:   code: 'EADDRINUSE',
+2025-09-24T20:21:40:   errno: -98,
+2025-09-24T20:21:40:   syscall: 'listen',
+2025-09-24T20:21:40:   address: '::',
+2025-09-24T20:21:40:   port: 8800
+2025-09-24T20:21:40: }
+2025-09-24T20:21:40: error: script "start" exited with code 1
+2025-09-24T20:21:40: $ next start
+2025-09-24T20:21:40:  ⨯ Failed to start server
+2025-09-24T20:21:40: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:40:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:40:     at new Promise (<anonymous>) {
+2025-09-24T20:21:40:   code: 'EADDRINUSE',
+2025-09-24T20:21:40:   errno: -98,
+2025-09-24T20:21:40:   syscall: 'listen',
+2025-09-24T20:21:40:   address: '::',
+2025-09-24T20:21:40:   port: 8800
+2025-09-24T20:21:40: }
+2025-09-24T20:21:40: error: script "start" exited with code 1
+2025-09-24T20:21:40: $ next start
+2025-09-24T20:21:41:  ⨯ Failed to start server
+2025-09-24T20:21:41: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:41:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:41:     at new Promise (<anonymous>) {
+2025-09-24T20:21:41:   code: 'EADDRINUSE',
+2025-09-24T20:21:41:   errno: -98,
+2025-09-24T20:21:41:   syscall: 'listen',
+2025-09-24T20:21:41:   address: '::',
+2025-09-24T20:21:41:   port: 8800
+2025-09-24T20:21:41: }
+2025-09-24T20:21:41: error: script "start" exited with code 1
+2025-09-24T20:21:41: $ next start
+2025-09-24T20:21:41:  ⨯ Failed to start server
+2025-09-24T20:21:41: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:41:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:41:     at new Promise (<anonymous>) {
+2025-09-24T20:21:41:   code: 'EADDRINUSE',
+2025-09-24T20:21:41:   errno: -98,
+2025-09-24T20:21:41:   syscall: 'listen',
+2025-09-24T20:21:41:   address: '::',
+2025-09-24T20:21:41:   port: 8800
+2025-09-24T20:21:41: }
+2025-09-24T20:21:41: error: script "start" exited with code 1
+2025-09-24T20:21:41: $ next start
+2025-09-24T20:21:41:  ⨯ Failed to start server
+2025-09-24T20:21:41: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:41:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:41:     at new Promise (<anonymous>) {
+2025-09-24T20:21:41:   code: 'EADDRINUSE',
+2025-09-24T20:21:41:   errno: -98,
+2025-09-24T20:21:41:   syscall: 'listen',
+2025-09-24T20:21:41:   address: '::',
+2025-09-24T20:21:41:   port: 8800
+2025-09-24T20:21:41: }
+2025-09-24T20:21:41: error: script "start" exited with code 1
+2025-09-24T20:21:41: $ next start
+2025-09-24T20:21:42:  ⨯ Failed to start server
+2025-09-24T20:21:42: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:42:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:42:     at new Promise (<anonymous>) {
+2025-09-24T20:21:42:   code: 'EADDRINUSE',
+2025-09-24T20:21:42:   errno: -98,
+2025-09-24T20:21:42:   syscall: 'listen',
+2025-09-24T20:21:42:   address: '::',
+2025-09-24T20:21:42:   port: 8800
+2025-09-24T20:21:42: }
+2025-09-24T20:21:42: error: script "start" exited with code 1
+2025-09-24T20:21:42: $ next start
+2025-09-24T20:21:42:  ⨯ Failed to start server
+2025-09-24T20:21:42: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:42:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:42:     at new Promise (<anonymous>) {
+2025-09-24T20:21:42:   code: 'EADDRINUSE',
+2025-09-24T20:21:42:   errno: -98,
+2025-09-24T20:21:42:   syscall: 'listen',
+2025-09-24T20:21:42:   address: '::',
+2025-09-24T20:21:42:   port: 8800
+2025-09-24T20:21:42: }
+2025-09-24T20:21:42: error: script "start" exited with code 1
+2025-09-24T20:21:42: $ next start
+2025-09-24T20:21:42:  ⨯ Failed to start server
+2025-09-24T20:21:42: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:42:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:42:     at new Promise (<anonymous>) {
+2025-09-24T20:21:42:   code: 'EADDRINUSE',
+2025-09-24T20:21:42:   errno: -98,
+2025-09-24T20:21:42:   syscall: 'listen',
+2025-09-24T20:21:42:   address: '::',
+2025-09-24T20:21:42:   port: 8800
+2025-09-24T20:21:42: }
+2025-09-24T20:21:42: error: script "start" exited with code 1
+2025-09-24T20:21:42: $ next start
+2025-09-24T20:21:43:  ⨯ Failed to start server
+2025-09-24T20:21:43: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:43:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:43:     at new Promise (<anonymous>) {
+2025-09-24T20:21:43:   code: 'EADDRINUSE',
+2025-09-24T20:21:43:   errno: -98,
+2025-09-24T20:21:43:   syscall: 'listen',
+2025-09-24T20:21:43:   address: '::',
+2025-09-24T20:21:43:   port: 8800
+2025-09-24T20:21:43: }
+2025-09-24T20:21:43: error: script "start" exited with code 1
+2025-09-24T20:21:43: $ next start
+2025-09-24T20:21:43:  ⨯ Failed to start server
+2025-09-24T20:21:43: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:43:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:43:     at new Promise (<anonymous>) {
+2025-09-24T20:21:43:   code: 'EADDRINUSE',
+2025-09-24T20:21:43:   errno: -98,
+2025-09-24T20:21:43:   syscall: 'listen',
+2025-09-24T20:21:43:   address: '::',
+2025-09-24T20:21:43:   port: 8800
+2025-09-24T20:21:43: }
+2025-09-24T20:21:43: error: script "start" exited with code 1
+2025-09-24T20:21:43: $ next start
+2025-09-24T20:21:43:  ⨯ Failed to start server
+2025-09-24T20:21:43: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:43:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:43:     at new Promise (<anonymous>) {
+2025-09-24T20:21:43:   code: 'EADDRINUSE',
+2025-09-24T20:21:43:   errno: -98,
+2025-09-24T20:21:43:   syscall: 'listen',
+2025-09-24T20:21:43:   address: '::',
+2025-09-24T20:21:43:   port: 8800
+2025-09-24T20:21:43: }
+2025-09-24T20:21:43: error: script "start" exited with code 1
+2025-09-24T20:21:43: $ next start
+2025-09-24T20:21:43:  ⨯ Failed to start server
+2025-09-24T20:21:43: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:43:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:43:     at new Promise (<anonymous>) {
+2025-09-24T20:21:43:   code: 'EADDRINUSE',
+2025-09-24T20:21:43:   errno: -98,
+2025-09-24T20:21:43:   syscall: 'listen',
+2025-09-24T20:21:43:   address: '::',
+2025-09-24T20:21:43:   port: 8800
+2025-09-24T20:21:43: }
+2025-09-24T20:21:43: error: script "start" exited with code 1
+2025-09-24T20:21:43: $ next start
+2025-09-24T20:21:44:  ⨯ Failed to start server
+2025-09-24T20:21:44: Error: listen EADDRINUSE: address already in use :::8800
+2025-09-24T20:21:44:     at <unknown> (Error: listen EADDRINUSE: address already in use :::8800)
+2025-09-24T20:21:44:     at new Promise (<anonymous>) {
+2025-09-24T20:21:44:   code: 'EADDRINUSE',
+2025-09-24T20:21:44:   errno: -98,
+2025-09-24T20:21:44:   syscall: 'listen',
+2025-09-24T20:21:44:   address: '::',
+2025-09-24T20:21:44:   port: 8800
+2025-09-24T20:21:44: }
+2025-09-24T20:21:44: error: script "start" exited with code 1
+2025-09-24T20:22:54: $ next start

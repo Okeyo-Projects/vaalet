@@ -1,0 +1,125 @@
+2025-09-24T20:58:53: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T20:58:53: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T20:58:53: 39 |     if (port && port > 0)
+2025-09-24T20:58:53: 40 |       details = ` ${address}:${port}`;
+2025-09-24T20:58:53: 41 |     else if (address)
+2025-09-24T20:58:53: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T20:58:53:          ^
+2025-09-24T20:58:53: error: connect ECONNREFUSED ::1:5432
+2025-09-24T20:58:53:    errno: -111,
+2025-09-24T20:58:53:  syscall: "connect",
+2025-09-24T20:58:53:     port: 5432,
+2025-09-24T20:58:53:  address: "::1",
+2025-09-24T20:58:53:     code: "ECONNREFUSED"
+2025-09-24T20:58:53: 
+2025-09-24T20:58:53:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T20:58:53:       at createConnectionError (node:net:1196:12)
+2025-09-24T20:58:53:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T20:58:53:       at connectError (node:net:366:48)
+2025-09-24T20:58:53: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T20:58:53: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T20:58:53: 39 |     if (port && port > 0)
+2025-09-24T20:58:53: 40 |       details = ` ${address}:${port}`;
+2025-09-24T20:58:53: 41 |     else if (address)
+2025-09-24T20:58:53: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T20:58:53:          ^
+2025-09-24T20:58:53: error: connect ECONNREFUSED 127.0.0.1:5432
+2025-09-24T20:58:53:    errno: -111,
+2025-09-24T20:58:53:  syscall: "connect",
+2025-09-24T20:58:53:     port: 5432,
+2025-09-24T20:58:53:  address: "127.0.0.1",
+2025-09-24T20:58:53:     code: "ECONNREFUSED"
+2025-09-24T20:58:53: 
+2025-09-24T20:58:53:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T20:58:53:       at createConnectionError (node:net:1196:12)
+2025-09-24T20:58:53:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T20:58:53:       at connectError (node:net:366:48)
+2025-09-24T20:58:53: 
+2025-09-24T21:00:19: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T21:00:19: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T21:00:19: 39 |     if (port && port > 0)
+2025-09-24T21:00:19: 40 |       details = ` ${address}:${port}`;
+2025-09-24T21:00:19: 41 |     else if (address)
+2025-09-24T21:00:19: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T21:00:19:          ^
+2025-09-24T21:00:19: error: connect ECONNREFUSED ::1:5432
+2025-09-24T21:00:19:    errno: -111,
+2025-09-24T21:00:19:  syscall: "connect",
+2025-09-24T21:00:19:     port: 5432,
+2025-09-24T21:00:19:  address: "::1",
+2025-09-24T21:00:19:     code: "ECONNREFUSED"
+2025-09-24T21:00:19: 
+2025-09-24T21:00:19:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T21:00:19:       at createConnectionError (node:net:1196:12)
+2025-09-24T21:00:19:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T21:00:19:       at connectError (node:net:366:48)
+2025-09-24T21:00:19: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T21:00:19: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T21:00:19: 39 |     if (port && port > 0)
+2025-09-24T21:00:19: 40 |       details = ` ${address}:${port}`;
+2025-09-24T21:00:19: 41 |     else if (address)
+2025-09-24T21:00:19: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T21:00:19:          ^
+2025-09-24T21:00:19: error: connect ECONNREFUSED 127.0.0.1:5432
+2025-09-24T21:00:19:    errno: -111,
+2025-09-24T21:00:19:  syscall: "connect",
+2025-09-24T21:00:19:     port: 5432,
+2025-09-24T21:00:19:  address: "127.0.0.1",
+2025-09-24T21:00:19:     code: "ECONNREFUSED"
+2025-09-24T21:00:19: 
+2025-09-24T21:00:19:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T21:00:19:       at createConnectionError (node:net:1196:12)
+2025-09-24T21:00:19:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T21:00:19:       at connectError (node:net:366:48)
+2025-09-24T21:00:19: 
+2025-09-24T21:01:00: TimeoutNegativeWarning: -41176.31798349763 is a negative number.
+2025-09-24T21:01:00: Timeout duration was set to 1.
+2025-09-24T21:01:00:       at reconnect (/root/apps/Valet/node_modules/postgres/src/connection.js:353:5)
+2025-09-24T21:01:00:       at connect (/root/apps/Valet/node_modules/postgres/src/connection.js:113:7)
+2025-09-24T21:01:00:       at connect (/root/apps/Valet/node_modules/postgres/src/index.js:393:7)
+2025-09-24T21:01:00:       at handle (/root/apps/Valet/node_modules/postgres/src/query.js:140:65)
+2025-09-24T21:01:00: 
+2025-09-24T21:01:00: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T21:01:00: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T21:01:00: 39 |     if (port && port > 0)
+2025-09-24T21:01:00: 40 |       details = ` ${address}:${port}`;
+2025-09-24T21:01:00: 41 |     else if (address)
+2025-09-24T21:01:00: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T21:01:00:          ^
+2025-09-24T21:01:00: error: connect ECONNREFUSED ::1:5432
+2025-09-24T21:01:00:    errno: -111,
+2025-09-24T21:01:00:  syscall: "connect",
+2025-09-24T21:01:00:     port: 5432,
+2025-09-24T21:01:00:  address: "::1",
+2025-09-24T21:01:00:     code: "ECONNREFUSED"
+2025-09-24T21:01:00: 
+2025-09-24T21:01:00:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T21:01:00:       at createConnectionError (node:net:1196:12)
+2025-09-24T21:01:00:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T21:01:00:       at connectError (node:net:366:48)
+2025-09-24T21:01:00: 37 |     util ??= @getInternalField(@internalModuleRegistry, 115) || @createInternalModuleById(115);
+2025-09-24T21:01:00: 38 |     let code = util.getSystemErrorName(err), details = "";
+2025-09-24T21:01:00: 39 |     if (port && port > 0)
+2025-09-24T21:01:00: 40 |       details = ` ${address}:${port}`;
+2025-09-24T21:01:00: 41 |     else if (address)
+2025-09-24T21:01:00: 42 |     super(`${syscall} ${code}${details}`);
+2025-09-24T21:01:00:          ^
+2025-09-24T21:01:00: error: connect ECONNREFUSED 127.0.0.1:5432
+2025-09-24T21:01:00:    errno: -111,
+2025-09-24T21:01:00:  syscall: "connect",
+2025-09-24T21:01:00:     port: 5432,
+2025-09-24T21:01:00:  address: "127.0.0.1",
+2025-09-24T21:01:00:     code: "ECONNREFUSED"
+2025-09-24T21:01:00: 
+2025-09-24T21:01:00:       at new ExceptionWithHostPort (internal:shared:42:5)
+2025-09-24T21:01:00:       at createConnectionError (node:net:1196:12)
+2025-09-24T21:01:00:       at afterConnectMultiple (node:net:1185:35)
+2025-09-24T21:01:00:       at connectError (node:net:366:48)
+2025-09-24T21:01:00: 
+2025-09-24T21:47:57: TimeoutNegativeWarning: -1966372.8962625456 is a negative number.
+2025-09-24T21:47:57: Timeout duration was set to 1.
+2025-09-24T21:47:57:       at reconnect (/root/apps/Valet/node_modules/postgres/src/connection.js:353:5)
+2025-09-24T21:47:57:       at connect (/root/apps/Valet/node_modules/postgres/src/connection.js:113:7)
+2025-09-24T21:47:57:       at connect (/root/apps/Valet/node_modules/postgres/src/index.js:393:7)
+2025-09-24T21:47:57:       at handle (/root/apps/Valet/node_modules/postgres/src/query.js:140:65)
+2025-09-24T21:47:57: 

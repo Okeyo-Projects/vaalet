@@ -1,0 +1,256 @@
+2025-09-24T20:54:04:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:04:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:04:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:04: 10 |       }
+2025-09-24T20:54:04: 11 |    }, reportError);
+2025-09-24T20:54:04: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:04:                ^
+2025-09-24T20:54:04: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:04:  syscall: "listen",
+2025-09-24T20:54:04:    errno: 0,
+2025-09-24T20:54:04:     code: "EADDRINUSE"
+2025-09-24T20:54:04: 
+2025-09-24T20:54:04:       at bun:main:12:28
+2025-09-24T20:54:04:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:04: 
+2025-09-24T20:54:04: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:05:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:05:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:05: 10 |       }
+2025-09-24T20:54:05: 11 |    }, reportError);
+2025-09-24T20:54:05: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:05:                ^
+2025-09-24T20:54:05: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:05:  syscall: "listen",
+2025-09-24T20:54:05:    errno: 0,
+2025-09-24T20:54:05:     code: "EADDRINUSE"
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05:       at bun:main:12:28
+2025-09-24T20:54:05:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:05: 
+2025-09-24T20:54:05: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:06:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:06:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:06: 10 |       }
+2025-09-24T20:54:06: 11 |    }, reportError);
+2025-09-24T20:54:06: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:06:                ^
+2025-09-24T20:54:06: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:06:  syscall: "listen",
+2025-09-24T20:54:06:    errno: 0,
+2025-09-24T20:54:06:     code: "EADDRINUSE"
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06:       at bun:main:12:28
+2025-09-24T20:54:06:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:06: 
+2025-09-24T20:54:06: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:07:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:07:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:07:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:07: 10 |       }
+2025-09-24T20:54:07: 11 |    }, reportError);
+2025-09-24T20:54:07: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:07:                ^
+2025-09-24T20:54:07: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:07:  syscall: "listen",
+2025-09-24T20:54:07:    errno: 0,
+2025-09-24T20:54:07:     code: "EADDRINUSE"
+2025-09-24T20:54:07: 
+2025-09-24T20:54:07:       at bun:main:12:28
+2025-09-24T20:54:07:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:07: 
+2025-09-24T20:54:07: Bun v1.2.20 (Linux x64)
+2025-09-24T20:54:07:  7 |       if (typeof entryNamespace?.default?.fetch === 'function')  {
+2025-09-24T20:54:07:  8 |         const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:07:  9 |         console.debug(`Started ${server.development ? 'development ' : ''}server: ${server.protocol}://${server.hostname}:${server.port}`);
+2025-09-24T20:54:07: 10 |       }
+2025-09-24T20:54:07: 11 |    }, reportError);
+2025-09-24T20:54:07: 12 |    const server = Bun.serve(entryNamespace.default);
+2025-09-24T20:54:07:                ^
+2025-09-24T20:54:07: error: Failed to start server. Is port 8787 in use?
+2025-09-24T20:54:07:  syscall: "listen",
+2025-09-24T20:54:07:    errno: 0,
+2025-09-24T20:54:07:     code: "EADDRINUSE"
+2025-09-24T20:54:07: 
+2025-09-24T20:54:07:       at bun:main:12:28
+2025-09-24T20:54:07:       at loadAndEvaluateModule (1:11)
+2025-09-24T20:54:07: 
+2025-09-24T20:54:07: Bun v1.2.20 (Linux x64)
